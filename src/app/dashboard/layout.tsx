@@ -73,12 +73,7 @@ const sidebarItems = [
     title: "Partage",
     href: "/dashboard/share",
     icon: Share2,
-  },
-  {
-    title: "Démo Sparkles",
-    href: "/sparkles-demo",
-    icon: Sparkles,
-  },
+  }
 ];
 
 export default function DashboardLayout({
