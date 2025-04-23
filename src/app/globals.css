@@ -4,33 +4,33 @@
 
 @layer base {
   :root {
-    /* Thème inspiré du design moderne Eduwerks */
-    --background: 240 10% 3.9%; /* Noir profond */
-    --foreground: 0 0% 98%; /* Blanc pour le texte principal */
-    --card: 240 10% 5%; /* Noir légèrement plus clair pour les cartes */
-    --card-foreground: 0 0% 98%; /* Blanc pour le texte des cartes */
-    --popover: 240 10% 4%; /* Noir pour les popovers */
-    --popover-foreground: 0 0% 98%; /* Blanc pour le texte des popovers */
-    --primary: 270 76% 59%; /* Violet/mauve vif #9D4EDD */
+    /* Thème inspiré du design Nutry */
+    --background: 214 100% 75%; /* Bleu ciel #7EB2FF */
+    --foreground: 0 0% 100%; /* Blanc pur pour le texte principal */
+    --card: 0 0% 100%; /* Blanc pour les cartes */
+    --card-foreground: 214 80% 40%; /* Bleu foncé pour le texte des cartes */
+    --popover: 0 0% 100%; /* Blanc pour les popovers */
+    --popover-foreground: 214 80% 40%; /* Bleu foncé pour le texte des popovers */
+    --primary: 214 80% 50%; /* Bleu principal #2E7BFF */
     --primary-foreground: 0 0% 100%; /* Blanc pur pour le texte sur fond primaire */
-    --secondary: 35 100% 50%; /* Orange/jaune vif #FF9900 */
-    --secondary-foreground: 240 10% 3.9%; /* Noir pour le texte sur fond secondaire */
-    --muted: 240 5% 15%; /* Gris très foncé pour les éléments discrets */
-    --muted-foreground: 240 5% 75%; /* Gris clair pour le texte discret */
-    --accent: 150 52% 51.8%; /* Vert menthe #7AE582 */
-    --accent-foreground: 240 10% 3.9%; /* Noir pour le texte sur fond accent */
+    --secondary: 195 100% 50%; /* Bleu-cyan #00D1FF */
+    --secondary-foreground: 0 0% 100%; /* Blanc pour le texte sur fond secondaire */
+    --muted: 214 30% 90%; /* Bleu très clair pour les éléments discrets */
+    --muted-foreground: 214 70% 40%; /* Bleu foncé pour le texte discret */
+    --accent: 130 80% 50%; /* Vert vif #2CDD5C pour les accents */
+    --accent-foreground: 0 0% 100%; /* Blanc pour le texte sur fond accent */
     --destructive: 0 84.2% 60.2%; /* Rouge pour les actions destructives */
-    --destructive-foreground: 0 0% 98%; /* Blanc pour le texte sur fond destructif */
-    --border: 240 5% 10%; /* Gris foncé pour les bordures */
-    --input: 240 5% 9%; /* Gris très foncé pour les champs de saisie */
-    --ring: 270 76% 59%; /* Même que primary pour la cohérence */
-    --radius: 0.5rem;
-    /* Couleurs du graphique modernisées */
-    --chart-1: 270 76% 59%; /* Violet - Systolique */
-    --chart-2: 150 52% 51.8%; /* Vert - Diastolique */
-    --chart-3: 35 100% 50%; /* Orange - Pouls */
-    --chart-4: 195 100% 50%; /* Bleu cyan - Accent complémentaire */
-    --chart-5: 320 100% 65%; /* Rose - Accent complémentaire */
+    --destructive-foreground: 0 0% 100%; /* Blanc pour le texte sur fond destructif */
+    --border: 214 20% 80%; /* Bleu très clair pour les bordures */
+    --input: 0 0% 100%; /* Blanc pour les champs de saisie */
+    --ring: 214 80% 50%; /* Même que primary pour la cohérence */
+    --radius: 1rem; /* Coins plus arrondis comme sur l'image */
+    /* Couleurs du graphique redesignées */
+    --chart-1: 0 70% 50%; /* Rouge pour systolique */
+    --chart-2: 214 80% 50%; /* Bleu pour diastolique */
+    --chart-3: 130 80% 50%; /* Vert pour pouls */
+    --chart-4: 280 70% 60%; /* Violet pour accent complémentaire */
+    --chart-5: 35 90% 55%; /* Orange pour accent complémentaire */
   }
 
   .dark {
