@@ -15,13 +15,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   LogOut,
-  Heart,
-  User,
-  BarChart3,
-  Share2,
-  FileText,
   Home,
   History,
+  Share2,
+  LayoutDashboard,
+  Newspaper,
+  Settings,
+  Sparkles,
+  User,
+  FileText,
   LineChart,
 } from "lucide-react";
 
@@ -39,6 +41,45 @@ interface UserProfile {
     email?: string;
   };
 }
+
+// Items for sidebar navigation
+const sidebarItems = [
+  {
+    title: "Tableau de bord",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Historique",
+    href: "/dashboard/history",
+    icon: History,
+  },
+  {
+    title: "Rapports",
+    href: "/dashboard/reports",
+    icon: Newspaper,
+  },
+  {
+    title: "Analyse avancée",
+    href: "/dashboard/advanced-analysis",
+    icon: LineChart,
+  },
+  {
+    title: "Profil",
+    href: "/dashboard/profile",
+    icon: Settings,
+  },
+  {
+    title: "Partage",
+    href: "/dashboard/share",
+    icon: Share2,
+  },
+  {
+    title: "Démo Sparkles",
+    href: "/sparkles-demo",
+    icon: Sparkles,
+  },
+];
 
 export default function DashboardLayout({
   children,
@@ -92,90 +133,26 @@ export default function DashboardLayout({
             </div>
             <div className="flex-1 overflow-auto py-4 px-2">
               <nav className="space-y-1">
-                <Link
-                  href="/dashboard"
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${
-                      pathname === "/dashboard"
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <Home className="mr-3 h-5 w-5 flex-shrink-0" />
-                  Tableau de bord
-                </Link>
-                <Link
-                  href="/dashboard/history"
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${
-                      pathname === "/dashboard/history"
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <History className="mr-3 h-5 w-5 flex-shrink-0" />
-                  Historique
-                </Link>
-                <Link
-                  href="/dashboard/reports"
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${
-                      pathname === "/dashboard/reports"
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <FileText className="mr-3 h-5 w-5 flex-shrink-0" />
-                  Rapports
-                </Link>
-                <Link
-                  href="/dashboard/advanced-analysis"
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${
-                      pathname === "/dashboard/advanced-analysis"
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <LineChart className="mr-3 h-5 w-5 flex-shrink-0 text-blue-600" />
-                  Analyse avancée
-                </Link>
-                <Link
-                  href="/dashboard/profile"
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${
-                      pathname === "/dashboard/profile"
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <User className="mr-3 h-5 w-5 flex-shrink-0" />
-                  Profil
-                </Link>
-                <Link
-                  href="/dashboard/share"
-                  className={`
-                    flex items-center px-3 py-2 text-sm rounded-md
-                    ${
-                      pathname === "/dashboard/share"
-                        ? "bg-gray-100 text-gray-900 font-medium"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }
-                  `}
-                >
-                  <Share2 className="mr-3 h-5 w-5 flex-shrink-0" />
-                  Partager
-                </Link>
+                {sidebarItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`
+                        flex items-center px-3 py-2 text-sm rounded-md
+                        ${
+                          isActive
+                            ? "bg-gray-100 text-gray-900 font-medium"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        }
+                      `}
+                    >
+                      <item.icon className={`mr-3 h-5 w-5 flex-shrink-0 ${item.icon === LineChart ? "text-blue-600" : ""}`} />
+                      {item.title}
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
             <div className="p-4 border-t border-border">
@@ -235,7 +212,7 @@ export default function DashboardLayout({
                       href="/dashboard"
                       className="flex items-center cursor-pointer"
                     >
-                      <Home className="mr-2 h-4 w-4" />
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
                       Tableau de bord
                     </Link>
                   </DropdownMenuItem>
@@ -253,7 +230,7 @@ export default function DashboardLayout({
                       href="/dashboard/reports"
                       className="flex items-center cursor-pointer"
                     >
-                      <FileText className="mr-2 h-4 w-4" />
+                      <Newspaper className="mr-2 h-4 w-4" />
                       Rapports
                     </Link>
                   </DropdownMenuItem>
@@ -271,7 +248,7 @@ export default function DashboardLayout({
                       href="/dashboard/profile"
                       className="flex items-center cursor-pointer"
                     >
-                      <User className="mr-2 h-4 w-4" />
+                      <Settings className="mr-2 h-4 w-4" />
                       Profil
                     </Link>
                   </DropdownMenuItem>
@@ -282,6 +259,15 @@ export default function DashboardLayout({
                     >
                       <Share2 className="mr-2 h-4 w-4" />
                       Partage
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/sparkles-demo"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Démo Sparkles
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
