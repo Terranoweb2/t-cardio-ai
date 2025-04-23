@@ -4,50 +4,22 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Download, Calendar, ArrowRight, Info } from "lucide-react";
+import { FileText, Download, Calendar, ArrowRight, Info, Sparkles } from "lucide-react";
 import { jsPDF } from "jspdf";
 import dayjs from "dayjs";
-
-// Types
-interface Measurement {
-  id: string;
-  date: Date | string;
-  systolic: number;
-  diastolic: number;
-  pulse: number;
-  notes: string;
-  classification: string;
-  color: string;
-}
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: "patient" | "doctor";
-  birthdate?: string;
-  phone?: string;
-  address?: string;
-  medicalInfo?: string;
-  allergies?: string;
-  medications?: string;
-  doctor?: {
-    id: string;
-    name: string;
-    speciality: string;
-    phone?: string;
-    email?: string;
-    address?: string;
-  };
-}
+import useOpenRouter from "@/hooks/use-openrouter";
+import type { Measurement, PatientInfo } from "@/lib/types";
 
 export default function ReportsPage() {
   const { toast } = useToast();
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<PatientInfo | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<"week" | "month" | "trimester" | "custom">("month");
   const [periodLabel, setPeriodLabel] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
+  const [aiReport, setAiReport] = useState<string>("");
+  const { generateHealthReport, isLoading, error } = useOpenRouter();
 
   // Chargement des données depuis le localStorage
   useEffect(() => {
@@ -58,7 +30,7 @@ export default function ReportsPage() {
 
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
-      setUser(JSON.parse(storedUser) as UserProfile);
+      setUser(JSON.parse(storedUser) as PatientInfo);
     }
 
     // Initialiser la période
@@ -207,49 +179,92 @@ export default function ReportsPage() {
           doc.text("Informations patient", 20, 50);
 
           doc.setFontSize(10);
-          doc.text(`Nom: ${user.name}`, 20, 60);
-          if (user.birthdate) doc.text(`Date de naissance: ${user.birthdate}`, 20, 65);
-          if (user.phone) doc.text(`Téléphone: ${user.phone}`, 20, 70);
-
-          // Infos médecin
-          if (user.doctor) {
-            doc.text(`Médecin: ${user.doctor.name}`, 120, 60);
-            if (user.doctor.speciality) doc.text(`Spécialité: ${user.doctor.speciality}`, 120, 65);
-            if (user.doctor.phone) doc.text(`Téléphone: ${user.doctor.phone}`, 120, 70);
-          }
+          doc.text(`Nom: ${user.displayName}`, 20, 60);
+          if (user.age) doc.text(`Âge: ${user.age} ans`, 20, 65);
+          if (user.gender) doc.text(`Genre: ${user.gender === 'male' ? 'Masculin' : user.gender === 'female' ? 'Féminin' : 'Autre'}`, 20, 70);
         }
 
-        // Statistiques
-        doc.setFontSize(14);
-        doc.text("Synthèse", 20, 85);
+        // Si un rapport IA existe, l'ajouter
+        if (aiReport) {
+          let yPos = 85;
 
-        doc.setFontSize(10);
+          doc.setFontSize(14);
+          doc.text("Analyse IA", 20, yPos);
+          yPos += 10;
+
+          doc.setFontSize(10);
+          // Reformater le rapport IA pour l'adapter au PDF
+          const maxWidth = 170;
+          const lines = doc.splitTextToSize(aiReport, maxWidth);
+
+          // Vérifier si on a besoin d'ajouter une page
+          if (yPos + lines.length * 5 > 270) {
+            doc.addPage();
+            yPos = 20;
+          }
+
+          doc.text(lines, 20, yPos);
+          yPos += lines.length * 5 + 10;
+
+          // Statistiques
+          doc.setFontSize(14);
+          doc.text("Synthèse", 20, yPos);
+
+          // Si on est presque en bas de page, ajouter une nouvelle page
+          if (yPos > 240) {
+            doc.addPage();
+            yPos = 20;
+            doc.setFontSize(14);
+            doc.text("Synthèse", 20, yPos);
+          }
+
+          yPos += 10;
+          doc.setFontSize(10);
+        } else {
+          // Statistiques (si pas de rapport IA)
+          doc.setFontSize(14);
+          doc.text("Synthèse", 20, 85);
+          doc.setFontSize(10);
+        }
+
+        // Position Y actuelle pour les statistiques
+        const yPos = aiReport ? (doc.getNumberOfPages() > 1 ? 30 : 95) : 95;
+
         const avgClassification = classifyBloodPressure(stats.avgSys, stats.avgDia);
-        doc.text(`Tension moyenne: ${stats.avgSys}/${stats.avgDia} mmHg - ${avgClassification}`, 20, 95);
-        doc.text(`Pouls moyen: ${stats.avgPulse} bpm`, 20, 100);
-        doc.text(`Variations systolique: ${stats.minSys} - ${stats.maxSys} mmHg`, 20, 105);
-        doc.text(`Variations diastolique: ${stats.minDia} - ${stats.maxDia} mmHg`, 20, 110);
-        doc.text(`Nombre de mesures: ${filteredMeasurements.length}`, 20, 115);
+        doc.text(`Tension moyenne: ${stats.avgSys}/${stats.avgDia} mmHg - ${avgClassification}`, 20, yPos);
+        doc.text(`Pouls moyen: ${stats.avgPulse} bpm`, 20, yPos + 5);
+        doc.text(`Variations systolique: ${stats.minSys} - ${stats.maxSys} mmHg`, 20, yPos + 10);
+        doc.text(`Variations diastolique: ${stats.minDia} - ${stats.maxDia} mmHg`, 20, yPos + 15);
+        doc.text(`Nombre de mesures: ${filteredMeasurements.length}`, 20, yPos + 20);
 
         // Tableau des mesures
         if (filteredMeasurements.length > 0) {
+          let tableYPos = yPos + 35;
+
+          // Si on est proche du bas de page, nouvelle page
+          if (tableYPos > 240) {
+            doc.addPage();
+            tableYPos = 20;
+          }
+
           doc.setFontSize(14);
-          doc.text("Détail des mesures", 20, 130);
+          doc.text("Détail des mesures", 20, tableYPos);
 
           // En-tête du tableau
           doc.setFontSize(9);
-          doc.text("Date", 20, 140);
-          doc.text("SYS", 70, 140);
-          doc.text("DIA", 85, 140);
-          doc.text("PUL", 100, 140);
-          doc.text("Classification", 115, 140);
-          doc.text("Notes", 160, 140);
+          tableYPos += 10;
+          doc.text("Date", 20, tableYPos);
+          doc.text("SYS", 70, tableYPos);
+          doc.text("DIA", 85, tableYPos);
+          doc.text("PUL", 100, tableYPos);
+          doc.text("Classification", 115, tableYPos);
+          doc.text("Notes", 170, tableYPos);
 
           // Ligne de séparation
-          doc.line(20, 142, 190, 142);
+          doc.line(20, tableYPos + 2, 190, tableYPos + 2);
 
           // Données du tableau
-          let y = 148;
+          let y = tableYPos + 8;
 
           // Trier les mesures par date
           const sortedMeasurements = [...filteredMeasurements].sort((a, b) =>
@@ -265,21 +280,24 @@ export default function ReportsPage() {
               doc.text("DIA", 85, 20);
               doc.text("PUL", 100, 20);
               doc.text("Classification", 115, 20);
-              doc.text("Notes", 160, 20);
+              doc.text("Notes", 170, 20);
               doc.line(20, 22, 190, 22);
               y = 30;
             }
+
+            // Classification de la mesure
+            const classification = classifyBloodPressure(m.systolic, m.diastolic);
 
             // Ajouter les données
             doc.text(formatDate(m.date), 20, y);
             doc.text(m.systolic.toString(), 70, y);
             doc.text(m.diastolic.toString(), 85, y);
             doc.text(m.pulse.toString(), 100, y);
-            doc.text(m.classification, 115, y);
+            doc.text(classification, 115, y);
 
             // Tronquer les notes si elles sont trop longues
-            const notes = m.notes.length > 15 ? `${m.notes.substring(0, 15)}...` : m.notes;
-            doc.text(notes, 160, y);
+            const notes = m.notes.length > 20 ? `${m.notes.substring(0, 20)}...` : m.notes;
+            doc.text(notes, 170, y);
 
             y += 6;
 
@@ -319,6 +337,44 @@ export default function ReportsPage() {
         setIsGenerating(false);
       }
     }, 500);
+  };
+
+  // Générer un rapport d'analyse avec l'IA
+  const generateAIReport = async () => {
+    setIsGeneratingAI(true);
+    try {
+      const filteredMeasurements = getFilteredMeasurements();
+      if (!filteredMeasurements.length || !user) {
+        throw new Error("Données insuffisantes pour générer un rapport");
+      }
+
+      const additionalContext = `
+        Période d'analyse: ${periodLabel}
+        Nombre de mesures: ${filteredMeasurements.length}
+      `;
+
+      const reportContent = await generateHealthReport(
+        filteredMeasurements,
+        user,
+        additionalContext
+      );
+
+      setAiReport(reportContent);
+
+      toast({
+        title: "Analyse IA générée",
+        description: "L'analyse de vos données a été réalisée avec succès.",
+      });
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: error || "Une erreur est survenue lors de la génération de l'analyse IA.",
+        variant: "destructive",
+      });
+      console.error("Erreur IA:", err);
+    } finally {
+      setIsGeneratingAI(false);
+    }
   };
 
   const filteredMeasurements = getFilteredMeasurements();
@@ -415,6 +471,45 @@ export default function ReportsPage() {
                 </div>
               )}
 
+              {/* Section d'analyse IA */}
+              {hasMeasurements && (
+                <div className="border rounded-md p-4 bg-blue-50">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-sm font-medium flex items-center">
+                      <Sparkles className="h-4 w-4 mr-2 text-blue-500" />
+                      Analyse IA de vos données
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={generateAIReport}
+                      disabled={isGeneratingAI || !hasMeasurements}
+                    >
+                      {isGeneratingAI ? "Analyse en cours..." : "Analyser mes données"}
+                    </Button>
+                  </div>
+
+                  {aiReport ? (
+                    <div className="mt-3 bg-white p-3 rounded-md text-sm border">
+                      <p className="text-xs text-gray-500 mb-2">Résultat de l'analyse :</p>
+                      <div className="prose prose-sm max-w-none">
+                        {aiReport.split('\n').map((paragraph, i) => (
+                          <p key={i} className={i === 0 ? "font-medium" : ""}>
+                            {paragraph}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-600 italic">
+                      {isGeneratingAI
+                        ? "Analyse en cours, veuillez patienter..."
+                        : "Cliquez sur \"Analyser mes données\" pour obtenir une analyse personnalisée de votre tension artérielle par intelligence artificielle."}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <Button
                   onClick={generateReport}
@@ -424,8 +519,8 @@ export default function ReportsPage() {
                   {isGenerating ? (
                     <>
                       <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
                       Génération en cours...
                     </>

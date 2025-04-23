@@ -1,375 +1,516 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { HeartPulse, AlertTriangle, CheckCircle, AlertCircle, LineChart } from "lucide-react";
-import Link from "next/link";
+import { PlusCircle, LineChart, Activity, Heart, History, Calendar, Sparkles } from "lucide-react";
+import BloodPressureChart from "@/components/ui/blood-pressure-chart";
+import type { Measurement, PatientInfo } from "@/lib/types";
+import { v4 as uuidv4 } from 'uuid';
+import useOpenRouter from "@/hooks/use-openrouter";
 
-// Animation CSS pour la transition de page
-const pageTransitionStyle = `
-  .page-transition {
-    animation: fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(32px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`;
-
-// Types
-interface Measurement {
-  id: string;
-  date: Date;
-  systolic: number;
-  diastolic: number;
-  pulse: number;
-  notes: string;
-  classification: string;
-  color: string;
-}
-
-export default function DashboardPage() {
+export default function Dashboard() {
   const { toast } = useToast();
-  const [systolic, setSystolic] = useState<string>("");
-  const [diastolic, setDiastolic] = useState<string>("");
-  const [pulse, setPulse] = useState<string>("");
+  const [systolic, setSystolic] = useState<number>(120);
+  const [diastolic, setDiastolic] = useState<number>(80);
+  const [pulse, setPulse] = useState<number>(70);
   const [notes, setNotes] = useState<string>("");
-  const [result, setResult] = useState<Measurement | null>(null);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [user, setUser] = useState<PatientInfo | null>(null);
+  const [openAIAnalysis, setOpenAIAnalysis] = useState<string>("");
+  const [analyzing, setAnalyzing] = useState<boolean>(false);
+  const { analyzeHealthData } = useOpenRouter();
 
-  const clearInputs = () => {
-    setSystolic("");
-    setDiastolic("");
-    setPulse("");
-    setNotes("");
-  };
-
-  const classifyBloodPressure = (sys: number, dia: number): { classification: string; color: string } => {
-    // Classification selon les normes de l'OMS
-    if (sys < 90 || dia < 60) {
-      return { classification: "Hypotension", color: "text-blue-700 bg-blue-50" };
+  // Charger les données depuis le localStorage
+  useEffect(() => {
+    const storedMeasurements = localStorage.getItem("measurements");
+    if (storedMeasurements) {
+      setMeasurements(JSON.parse(storedMeasurements));
     }
-    if (sys < 120 && dia < 80) {
-      return { classification: "Optimale", color: "text-green-700 bg-green-50" };
-    }
-    if ((sys >= 120 && sys < 130) && dia < 85) {
-      return { classification: "Normale", color: "text-green-700 bg-green-50" };
-    }
-    if ((sys >= 130 && sys < 140) || (dia >= 85 && dia < 90)) {
-      return { classification: "Normale haute", color: "text-yellow-700 bg-yellow-50" };
-    }
-    if ((sys >= 140 && sys < 160) || (dia >= 90 && dia < 100)) {
-      return { classification: "Hypertension légère (Stade 1)", color: "text-orange-700 bg-orange-50" };
-    }
-    if ((sys >= 160 && sys < 180) || (dia >= 100 && dia < 110)) {
-      return { classification: "Hypertension modérée (Stade 2)", color: "text-red-700 bg-red-50" };
-    }
-    return { classification: "Hypertension sévère (Stade 3)", color: "text-red-900 bg-red-100" };
-  };
 
-  const classifyPulse = (pulse: number): string => {
-    if (pulse < 60) {
-      return "Bradycardie";
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      // Créer un utilisateur par défaut si aucun n'existe
+      const defaultUser: PatientInfo = {
+        id: uuidv4(),
+        displayName: "Jean Dupont",
+        email: "jean.dupont@example.com",
+        age: 45,
+        gender: "male",
+        weight: 75,
+        height: 175,
+        medications: ["Amlodipine 5mg"],
+        medicalConditions: ["Hypertension légère"]
+      };
+
+      localStorage.setItem("user", JSON.stringify(defaultUser));
+      setUser(defaultUser);
     }
-    if (pulse > 100) {
-      return "Tachycardie";
+  }, []);
+
+  // Enregistrer les mesures dans le localStorage
+  useEffect(() => {
+    if (measurements.length > 0) {
+      localStorage.setItem("measurements", JSON.stringify(measurements));
     }
-    return "Normal";
-  };
+  }, [measurements]);
 
-  const getRecommendations = (classification: string): string[] => {
-    // Recommendations basées sur la classification
-    const commonRecommendations = [
-      "Maintenez une alimentation équilibrée, faible en sel",
-      "Pratiquez une activité physique régulière",
-      "Limitez votre consommation d'alcool",
-      "Arrêtez de fumer si vous êtes fumeur",
-      "Gérez votre stress par des techniques de relaxation"
-    ];
-
-    const specificRecommendations: Record<string, string[]> = {
-      "Hypotension": [
-        "Hydratez-vous régulièrement",
-        "Augmentez légèrement votre consommation de sel",
-        "Évitez de vous lever trop rapidement",
-        "Consultez votre médecin si les symptômes persistent"
-      ],
-      "Optimale": [
-        "Continuez vos bonnes habitudes",
-        "Effectuez un contrôle annuel"
-      ],
-      "Normale": [
-        "Maintenez vos habitudes actuelles",
-        "Contrôlez votre tension tous les 6 mois"
-      ],
-      "Normale haute": [
-        "Surveillez votre tension plus régulièrement",
-        "Réduisez votre consommation de sel",
-        "Contrôlez votre poids si nécessaire"
-      ],
-      "Hypertension légère (Stade 1)": [
-        "Consultez votre médecin pour un suivi",
-        "Suivez strictement les conseils d'hygiène de vie",
-        "Contrôlez votre tension hebdomadairement"
-      ],
-      "Hypertension modérée (Stade 2)": [
-        "Consultez rapidement votre médecin",
-        "Un traitement médicamenteux peut être nécessaire",
-        "Mesurez votre tension plusieurs fois par semaine"
-      ],
-      "Hypertension sévère (Stade 3)": [
-        "Consultez un médecin en urgence",
-        "Un traitement médicamenteux est nécessaire",
-        "Suivez rigoureusement les prescriptions médicales"
-      ]
-    };
-
-    // On retourne les recommandations spécifiques + quelques recommandations communes
-    return [
-      ...(specificRecommendations[classification] || []),
-      ...commonRecommendations.slice(0, 3) // Prendre seulement 3 recommandations communes
-    ];
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validation
-    const sysValue = Number.parseInt(systolic);
-    const diaValue = Number.parseInt(diastolic);
-    const pulseValue = Number.parseInt(pulse);
-
-    if (Number.isNaN(sysValue) || Number.isNaN(diaValue) || Number.isNaN(pulseValue)) {
+  const addMeasurement = () => {
+    if (systolic < 60 || systolic > 250 || diastolic < 40 || diastolic > 150 || pulse < 40 || pulse > 200) {
       toast({
-        title: "Données invalides",
-        description: "Veuillez saisir des valeurs numériques valides",
+        title: "Valeurs incorrectes",
+        description: "Veuillez entrer des valeurs physiologiquement plausibles.",
         variant: "destructive",
       });
       return;
     }
 
-    // Classification
-    const { classification, color } = classifyBloodPressure(sysValue, diaValue);
-    const pulseStatus = classifyPulse(pulseValue);
+    setLoading(true);
 
-    // Création d'une nouvelle mesure
+    // Classification de la pression artérielle
+    const classification = classifyBloodPressure(systolic, diastolic);
+
+    // Détermination de la couleur selon la classification
+    const color = getClassificationColor(classification);
+
     const newMeasurement: Measurement = {
-      id: Date.now().toString(),
-      date: new Date(),
-      systolic: sysValue,
-      diastolic: diaValue,
-      pulse: pulseValue,
-      notes: notes,
-      classification: classification,
-      color: color,
+      id: uuidv4(),
+      date: new Date().toISOString(),
+      systolic,
+      diastolic,
+      pulse,
+      notes,
+      userId: user?.id || "unknown"
     };
 
-    // Stocker dans l'historique (localStorage)
-    const history = JSON.parse(localStorage.getItem("measurements") || "[]");
-    history.push(newMeasurement);
-    localStorage.setItem("measurements", JSON.stringify(history));
+    setMeasurements(prev => [newMeasurement, ...prev]);
 
-    // Afficher le résultat
-    setResult(newMeasurement);
+    // Réinitialiser le formulaire
+    setSystolic(120);
+    setDiastolic(80);
+    setPulse(70);
+    setNotes("");
 
     toast({
-      title: "Mesure enregistrée",
-      description: "Votre mesure a été ajoutée à l'historique",
+      title: "Mesure ajoutée",
+      description: `Tension: ${systolic}/${diastolic} mmHg, Pouls: ${pulse} bpm`,
+    });
+
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  };
+
+  // Classification de la pression artérielle selon les normes OMS
+  const classifyBloodPressure = (sys: number, dia: number): string => {
+    if (sys < 90 || dia < 60) {
+      return "Hypotension";
+    }
+    if (sys < 120 && dia < 80) {
+      return "Optimale";
+    }
+    if ((sys >= 120 && sys < 130) && dia < 85) {
+      return "Normale";
+    }
+    if ((sys >= 130 && sys < 140) || (dia >= 85 && dia < 90)) {
+      return "Normale haute";
+    }
+    if ((sys >= 140 && sys < 160) || (dia >= 90 && dia < 100)) {
+      return "Hypertension légère (Stade 1)";
+    }
+    if ((sys >= 160 && sys < 180) || (dia >= 100 && dia < 110)) {
+      return "Hypertension modérée (Stade 2)";
+    }
+    return "Hypertension sévère (Stade 3)";
+  };
+
+  // Attribuer une couleur selon la classification
+  const getClassificationColor = (classification: string): string => {
+    switch (classification) {
+      case "Hypotension":
+        return "blue";
+      case "Optimale":
+        return "green";
+      case "Normale":
+        return "green";
+      case "Normale haute":
+        return "yellow";
+      case "Hypertension légère (Stade 1)":
+        return "orange";
+      case "Hypertension modérée (Stade 2)":
+        return "red";
+      case "Hypertension sévère (Stade 3)":
+        return "purple";
+      default:
+        return "gray";
+    }
+  };
+
+  const analyzeLastMeasurements = async () => {
+    if (measurements.length === 0) {
+      toast({
+        title: "Aucune mesure disponible",
+        description: "Veuillez ajouter des mesures avant de demander une analyse.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    try {
+      const lastFiveMeasurements = measurements.slice(0, 5);
+      const formattedData = lastFiveMeasurements.map(m => {
+        return `Date: ${new Date(m.date).toLocaleString()}, SYS: ${m.systolic}, DIA: ${m.diastolic}, Pouls: ${m.pulse}, Notes: ${m.notes}`;
+      }).join('\n');
+
+      const prompt = `
+        Analyse ces 5 dernières mesures de tension artérielle et donne un avis médical concis en français.
+
+        Patient: ${user?.displayName || 'Inconnu'},
+        Âge: ${user?.age || 'Non précisé'},
+        Sexe: ${user?.gender || 'Non précisé'},
+        Médicaments: ${user?.medications?.join(', ') || 'Aucun'}
+
+        Données:
+      `;
+
+      const analysis = await analyzeHealthData(formattedData, prompt);
+      setOpenAIAnalysis(analysis);
+
+      toast({
+        title: "Analyse complétée",
+        description: "L'analyse de vos données a été réalisée avec succès.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur d'analyse",
+        description: "Une erreur est survenue lors de l'analyse de vos données.",
+        variant: "destructive",
+      });
+      console.error("Erreur d'analyse:", error);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  // Générer des données de test
+  const generateTestData = () => {
+    const now = new Date();
+    const testMeasurements: Measurement[] = [];
+
+    // Générer des mesures pour les 30 derniers jours
+    for (let i = 0; i < 30; i++) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+
+      // Simuler une tendance à l'amélioration (valeurs qui diminuent légèrement)
+      const day = i;
+
+      // Base values
+      const baseSystolic = 145 - Math.floor(day / 10) * 5;
+      const baseDiastolic = 95 - Math.floor(day / 10) * 3;
+      const basePulse = 78 - Math.floor(day / 15) * 2;
+
+      // Ajouter une variation aléatoire
+      const systolic = baseSystolic + Math.floor(Math.random() * 10) - 5;
+      const diastolic = baseDiastolic + Math.floor(Math.random() * 8) - 4;
+      const pulse = basePulse + Math.floor(Math.random() * 6) - 3;
+
+      // Générer des notes
+      let notes = "";
+      if (i === 0) {
+        notes = "Mesure prise après activité physique légère";
+      } else if (i === 7) {
+        notes = "Début traitement médicamenteux";
+      } else if (i === 15) {
+        notes = "Mesure prise en position assise après repos";
+      } else if (i === 25) {
+        notes = "Mesure prise le matin à jeun";
+      }
+
+      testMeasurements.push({
+        id: uuidv4(),
+        date: date.toISOString(),
+        systolic,
+        diastolic,
+        pulse,
+        notes,
+        userId: user?.id || "unknown"
+      });
+    }
+
+    setMeasurements(testMeasurements);
+
+    toast({
+      title: "Données de test générées",
+      description: "30 mesures de test ont été créées pour les 30 derniers jours.",
     });
   };
 
   return (
-    <>
-      <style>{pageTransitionStyle}</style>
-      <div className="max-w-4xl mx-auto page-transition">
-        <h1 className="text-2xl tablet:text-tablet-xl font-bold mb-6">Saisie des constantes</h1>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Tableau de bord</h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={generateTestData}
+        >
+          Générer des données de test
+        </Button>
+      </div>
 
-        <div className="grid gap-6 md:grid-cols-2 tablet-portrait:grid-cols-2 tablet-landscape:gap-8">
-          <Card className="tablet-portrait:p-tablet">
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="overview" className="flex items-center">
+            <Activity className="mr-2 h-4 w-4" />
+            Aperçu
+          </TabsTrigger>
+          <TabsTrigger value="add-measurement" className="flex items-center">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Ajouter une mesure
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-md font-medium">Dernière tension</CardTitle>
+                <Heart className="h-4 w-4 text-red-500" />
+              </CardHeader>
+              <CardContent>
+                {measurements.length > 0 ? (
+                  <>
+                    <div className="text-3xl font-bold">
+                      {measurements[0].systolic}/{measurements[0].diastolic}
+                      <span className="text-sm font-normal text-gray-500 ml-1">mmHg</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(measurements[0].date).toLocaleString()}
+                    </p>
+                    <p className="text-sm font-medium mt-2">{classifyBloodPressure(measurements[0].systolic, measurements[0].diastolic)}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Aucune mesure enregistrée</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-md font-medium">Dernier pouls</CardTitle>
+                <Activity className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                {measurements.length > 0 ? (
+                  <>
+                    <div className="text-3xl font-bold">
+                      {measurements[0].pulse}
+                      <span className="text-sm font-normal text-gray-500 ml-1">bpm</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(measurements[0].date).toLocaleString()}
+                    </p>
+                    <p className="text-sm mt-2">
+                      {measurements[0].pulse < 60 ? "Bradycardie" : measurements[0].pulse > 100 ? "Tachycardie" : "Normal"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-gray-500">Aucune mesure enregistrée</p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-md font-medium">Historique</CardTitle>
+                <History className="h-4 w-4 text-gray-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">
+                  {measurements.length}
+                  <span className="text-sm font-normal text-gray-500 ml-1">mesures</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {measurements.length > 0
+                    ? `Première mesure le ${new Date(
+                        measurements[measurements.length - 1].date
+                      ).toLocaleDateString()}`
+                    : "Aucune mesure enregistrée"}
+                </p>
+                <div className="mt-2">
+                  <Button variant="outline" size="sm" asChild className="w-full">
+                    <a href="/dashboard/history">Voir l'historique</a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {measurements.length > 0 && (
+            <>
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle className="text-xl">Évolution de la tension artérielle</CardTitle>
+                  <CardDescription>
+                    Visualisation des 10 dernières mesures
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BloodPressureChart
+                    data={measurements.slice(0, 10).reverse()}
+                    height={300}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card className="mt-4">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl flex items-center">
+                      <Sparkles className="h-5 w-5 mr-2 text-blue-500" />
+                      Analyse IA
+                    </CardTitle>
+                    <CardDescription>
+                      Analyse de vos dernières mesures par intelligence artificielle
+                    </CardDescription>
+                  </div>
+                  <Button
+                    onClick={analyzeLastMeasurements}
+                    disabled={analyzing || measurements.length === 0}
+                    size="sm"
+                  >
+                    {analyzing ? "Analyse en cours..." : "Analyser mes données"}
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {openAIAnalysis ? (
+                    <div className="bg-blue-50 p-4 rounded-md">
+                      <h3 className="font-medium mb-2">Résultat de l'analyse :</h3>
+                      <div className="text-sm">
+                        {openAIAnalysis.split('\n').map((paragraph, i) => (
+                          <p key={i} className="mb-2">{paragraph}</p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      {analyzing ? (
+                        <div className="animate-pulse">Analyse en cours, veuillez patienter...</div>
+                      ) : (
+                        <p>Cliquez sur "Analyser mes données" pour obtenir une analyse personnalisée de votre tension artérielle.</p>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </TabsContent>
+
+        <TabsContent value="add-measurement">
+          <Card>
             <CardHeader>
-              <CardTitle className="flex items-center tablet:text-tablet-lg">
-                <HeartPulse className="mr-2 h-5 w-5 tablet:h-6 tablet:w-6 text-red-500" />
-                Nouvelle mesure
-              </CardTitle>
-              <CardDescription className="tablet:text-base">
-                Saisissez vos constantes vitales pour obtenir une analyse
+              <CardTitle>Ajouter une nouvelle mesure</CardTitle>
+              <CardDescription>
+                Enregistrez vos valeurs de tension artérielle et de pouls
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4 tablet:space-y-5">
-                <div className="grid grid-cols-2 gap-4 tablet:gap-5">
+              <div className="grid gap-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <label htmlFor="systolic" className="block text-sm tablet:text-base font-medium mb-1">
-                      Systolique (SYS) mmHg
+                    <label htmlFor="systolic" className="block text-sm font-medium mb-1">
+                      Systolique (SYS)
                     </label>
-                    <Input
-                      id="systolic"
-                      type="number"
-                      value={systolic}
-                      onChange={(e) => setSystolic(e.target.value)}
-                      placeholder="120"
-                      required
-                      className="tablet:h-12 tablet:text-lg"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        id="systolic"
+                        value={systolic}
+                        onChange={(e) => setSystolic(Number(e.target.value))}
+                        className="border border-gray-300 p-2 rounded-md w-full"
+                        min="60"
+                        max="250"
+                      />
+                      <span className="absolute right-2 top-2 text-gray-500 text-sm">
+                        mmHg
+                      </span>
+                    </div>
                   </div>
                   <div>
-                    <label htmlFor="diastolic" className="block text-sm tablet:text-base font-medium mb-1">
-                      Diastolique (DIA) mmHg
+                    <label htmlFor="diastolic" className="block text-sm font-medium mb-1">
+                      Diastolique (DIA)
                     </label>
-                    <Input
-                      id="diastolic"
-                      type="number"
-                      value={diastolic}
-                      onChange={(e) => setDiastolic(e.target.value)}
-                      placeholder="80"
-                      required
-                      className="tablet:h-12 tablet:text-lg"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        id="diastolic"
+                        value={diastolic}
+                        onChange={(e) => setDiastolic(Number(e.target.value))}
+                        className="border border-gray-300 p-2 rounded-md w-full"
+                        min="40"
+                        max="150"
+                      />
+                      <span className="absolute right-2 top-2 text-gray-500 text-sm">
+                        mmHg
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="pulse" className="block text-sm font-medium mb-1">
+                      Pouls
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        id="pulse"
+                        value={pulse}
+                        onChange={(e) => setPulse(Number(e.target.value))}
+                        className="border border-gray-300 p-2 rounded-md w-full"
+                        min="40"
+                        max="200"
+                      />
+                      <span className="absolute right-2 top-2 text-gray-500 text-sm">
+                        bpm
+                      </span>
+                    </div>
                   </div>
                 </div>
+
                 <div>
-                  <label htmlFor="pulse" className="block text-sm tablet:text-base font-medium mb-1">
-                    Pouls (PUL) bpm
+                  <label htmlFor="notes" className="block text-sm font-medium mb-1">
+                    Notes (facultatif)
                   </label>
-                  <Input
-                    id="pulse"
-                    type="number"
-                    value={pulse}
-                    onChange={(e) => setPulse(e.target.value)}
-                    placeholder="75"
-                    required
-                    className="tablet:h-12 tablet:text-lg"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="notes" className="block text-sm tablet:text-base font-medium mb-1">
-                    Notes (optionnel)
-                  </label>
-                  <Input
+                  <textarea
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Activité, médicaments, symptômes..."
-                    className="tablet:h-12 tablet:text-lg"
+                    className="border border-gray-300 p-2 rounded-md w-full h-20"
+                    placeholder="Ajouter des notes sur la mesure (situation, symptômes, médicaments...)"
                   />
                 </div>
-                <div className="flex space-x-2 pt-2 tablet:pt-4">
-                  <Button type="submit" className="flex-1 tablet:h-12 tablet:text-base">
-                    Analyser
-                  </Button>
-                  <Button type="button" variant="outline" onClick={clearInputs} className="tablet:h-12 tablet:text-base">
-                    Effacer
+
+                <div className="flex justify-between items-center">
+                  <div className="text-sm">
+                    <Calendar className="h-4 w-4 inline mr-1" />
+                    <span>{new Date().toLocaleString()}</span>
+                  </div>
+                  <Button onClick={addMeasurement} disabled={loading}>
+                    {loading ? "Enregistrement..." : "Enregistrer la mesure"}
                   </Button>
                 </div>
-              </form>
+              </div>
             </CardContent>
           </Card>
-
-          {result ? (
-            <Card className="tablet-portrait:p-tablet">
-              <CardHeader className={result.color}>
-                <CardTitle className="flex items-center tablet:text-tablet-lg">
-                  {result.classification.includes("Hypertension sévère") ? (
-                    <AlertTriangle className="mr-2 h-5 w-5 tablet:h-6 tablet:w-6" />
-                  ) : result.classification.includes("Hypertension") ? (
-                    <AlertCircle className="mr-2 h-5 w-5 tablet:h-6 tablet:w-6" />
-                  ) : (
-                    <CheckCircle className="mr-2 h-5 w-5 tablet:h-6 tablet:w-6" />
-                  )}
-                  Résultat
-                </CardTitle>
-                <CardDescription className="text-inherit opacity-90 tablet:text-base">
-                  {new Date(result.date).toLocaleString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-6 tablet:pt-8">
-                <div className="space-y-4 tablet:space-y-6">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-sm tablet:text-base text-muted-foreground">SYS</p>
-                      <p className="text-2xl tablet:text-3xl font-bold">{result.systolic}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm tablet:text-base text-muted-foreground">DIA</p>
-                      <p className="text-2xl tablet:text-3xl font-bold">{result.diastolic}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm tablet:text-base text-muted-foreground">PUL</p>
-                      <p className="text-2xl tablet:text-3xl font-bold">{result.pulse}</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="font-semibold mb-1 tablet:text-base">Classification:</p>
-                    <Alert className={result.color}>
-                      <AlertTitle className="tablet:text-lg">{result.classification}</AlertTitle>
-                      <AlertDescription>
-                        {classifyPulse(result.pulse) !== "Normal" && (
-                          <span className="block mt-1 tablet:text-base">
-                            Pouls: {classifyPulse(result.pulse)}
-                          </span>
-                        )}
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-
-                  <div>
-                    <p className="font-semibold mb-2 tablet:text-base">Recommandations:</p>
-                    <ul className="space-y-1 text-sm tablet:text-base">
-                      {getRecommendations(result.classification).map((rec, index) => (
-                        <li key={`${result.id}-rec-${index}`} className="flex items-start">
-                          <span className="mr-2">•</span>
-                          <span>{rec}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {result.notes && (
-                    <div>
-                      <p className="font-semibold mb-1 tablet:text-base">Notes:</p>
-                      <p className="text-sm tablet:text-base text-muted-foreground">{result.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="border-t pt-4 tablet:pt-6">
-                <Button
-                  variant="outline"
-                  className="w-full tablet:h-12 tablet:text-base"
-                  onClick={() => setResult(null)}
-                >
-                  Nouvelle analyse
-                </Button>
-              </CardFooter>
-            </Card>
-          ) : (
-            <Card className="border-dashed bg-muted/20 tablet-portrait:p-tablet">
-              <CardContent className="flex flex-col items-center justify-center h-full py-10 tablet:py-16">
-                <LineChart className="h-12 w-12 tablet:h-16 tablet:w-16 text-muted mb-4" />
-                <p className="text-foreground text-center mb-2 tablet:text-lg">Visualisez vos tendances</p>
-                <p className="text-muted-foreground text-sm tablet:text-base text-center mb-6 max-w-xs">
-                  Suivez l'évolution de votre tension artérielle et de votre pouls dans le temps grâce aux graphiques interactifs
-                </p>
-                <Button variant="outline" asChild className="tablet:h-12 tablet:text-base">
-                  <Link href="/dashboard/history">
-                    Voir les graphiques
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-    </>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
