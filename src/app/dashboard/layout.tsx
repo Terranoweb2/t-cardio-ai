@@ -164,7 +164,7 @@ export default function DashboardLayout({
                     )}`}
                     alt={user.name}
                   />
-                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                  <AvatarFallback>{user?.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
                   <p className="text-sm font-medium">{user.name}</p>
@@ -200,7 +200,7 @@ export default function DashboardLayout({
                         )}`}
                         alt={user.name}
                       />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback>{user?.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>

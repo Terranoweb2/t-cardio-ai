@@ -12,9 +12,13 @@ export default function Home() {
   useEffect(() => {
     // Cette vérification s'exécute uniquement côté client, évitant les problèmes d'hydratation
     if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        router.push("/dashboard");
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          router.push("/dashboard");
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'utilisateur:", error);
       }
     }
   }, [router]);

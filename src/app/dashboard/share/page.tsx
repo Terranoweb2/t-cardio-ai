@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -65,6 +66,7 @@ interface UserProfile {
 
 export default function SharePage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [tokens, setTokens] = useState<SharedToken[]>([]);
   const [incomingShares, setIncomingShares] = useState<IncomingShare[]>([]);
@@ -77,31 +79,50 @@ export default function SharePage() {
   const [manualTokenInput, setManualTokenInput] = useState<string>("");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
+    // Vérifier si le code s'exécute côté client
+    if (typeof window === 'undefined') return;
+    
+    // Vérifier si l'utilisateur est connecté
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
         setUser(JSON.parse(storedUser) as UserProfile);
-      } catch (e) {
-        setUser(null);
+      } else {
+        // Rediriger vers la page d'authentification si non connecté
+        router.push('/auth');
       }
-    }
-    const storedTokens = localStorage.getItem("sharedTokens");
-    if (storedTokens) {
-      try {
-        setTokens(JSON.parse(storedTokens));
-      } catch (e) {
+      
+      const storedTokens = localStorage.getItem("sharedTokens");
+      if (storedTokens) {
+        const parsedTokens = JSON.parse(storedTokens);
+        if (Array.isArray(parsedTokens)) {
+          setTokens(parsedTokens);
+        } else {
+          setTokens([]);
+          console.warn("Format de tokens invalide, réinitialisation");
+        }
+      } else {
         setTokens([]);
       }
-    }
-    const storedIncomingShares = localStorage.getItem("incomingShares");
-    if (storedIncomingShares) {
-      try {
-        setIncomingShares(JSON.parse(storedIncomingShares));
-      } catch (e) {
+      
+      const storedIncomingShares = localStorage.getItem("incomingShares");
+      if (storedIncomingShares) {
+        const parsedShares = JSON.parse(storedIncomingShares);
+        if (Array.isArray(parsedShares)) {
+          setIncomingShares(parsedShares);
+        } else {
+          setIncomingShares([]);
+          console.warn("Format de partages entrants invalide, réinitialisation");
+        }
+      } else {
         setIncomingShares([]);
       }
+    } catch (error) {
+      console.error("Erreur lors du chargement des données de partage:", error);
+      setTokens([]);
+      setIncomingShares([]);
     }
-  }, []);
+  }, [router]);
 
   const createNewToken = () => {
     if (!newTokenName.trim()) {

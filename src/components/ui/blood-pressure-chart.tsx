@@ -54,6 +54,11 @@ export function BloodPressureChart({ data, measurements, timeFrame = 'all', heig
 
   // Filtrer les mesures selon la période sélectionnée
   const filteredMeasurements = useMemo(() => {
+    // Vérifier que chartMeasurements est un tableau valide
+    if (!Array.isArray(chartMeasurements) || chartMeasurements.length === 0) {
+      return [];
+    }
+    
     if (timeFrame === 'all' || !timeFrame) return chartMeasurements;
 
     const now = dayjs();
@@ -68,8 +73,15 @@ export function BloodPressureChart({ data, measurements, timeFrame = 'all', heig
     }
 
     return chartMeasurements.filter(m => {
-      const measureDate = dayjs(m.date);
-      return measureDate.isAfter(startDate);
+      // Vérifier que m.date existe et est valide
+      if (!m?.date) return false;
+      try {
+        const measureDate = dayjs(m.date);
+        return measureDate.isValid() && measureDate.isAfter(startDate);
+      } catch (error) {
+        console.error("Erreur lors du filtrage des mesures:", error);
+        return false;
+      }
     });
   }, [chartMeasurements, timeFrame]);
 

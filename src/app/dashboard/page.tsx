@@ -6,54 +6,83 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle, LineChart, Activity, Heart, History, Calendar, Sparkles } from "lucide-react";
+import { PlusCircle, LineChart, Activity, Heart, History, Calendar, Sparkles, Loader2 } from "lucide-react";
 import { BloodPressureChart } from "@/components/ui/blood-pressure-chart";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { Measurement, PatientInfo } from "@/lib/types";
-import { v4 as uuidv4 } from 'uuid';
 import useOpenRouter from "@/hooks/use-openrouter";
+import { useAuth } from "@/contexts/AuthContext";
+import { measurementService } from "@/services/api";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Dashboard() {
   const { toast } = useToast();
   const router = useRouter();
+  const { user, token } = useAuth();
   const [systolic, setSystolic] = useState<number>(120);
   const [diastolic, setDiastolic] = useState<number>(80);
   const [pulse, setPulse] = useState<number>(70);
   const [notes, setNotes] = useState<string>("");
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [user, setUser] = useState<PatientInfo | null>(null);
+  const [fetchingMeasurements, setFetchingMeasurements] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const [openAIAnalysis, setOpenAIAnalysis] = useState<string>("");
   const [analyzing, setAnalyzing] = useState<boolean>(false);
   const { analyzeHealthData } = useOpenRouter();
 
-  // Charger les données depuis le localStorage
+  // Charger les mesures depuis l'API
   useEffect(() => {
-    const storedMeasurements = localStorage.getItem("measurements");
-    if (storedMeasurements) {
-      setMeasurements(JSON.parse(storedMeasurements));
+    if (!user || !token) {
+      // Fallback au localStorage pendant la transition vers l'API
+      if (typeof window === 'undefined') return;
+      
+      try {
+        const storedMeasurements = localStorage.getItem("measurements");
+        if (storedMeasurements) {
+          setMeasurements(JSON.parse(storedMeasurements));
+        }
+        setFetchingMeasurements(false);
+      } catch (error) {
+        console.error("Erreur lors du chargement des mesures depuis le localStorage:", error);
+        setFetchingMeasurements(false);
+      }
+      return;
     }
-
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      // Créer un utilisateur par défaut si aucun n'existe
-      const defaultUser: PatientInfo = {
-        id: uuidv4(),
-        displayName: "Jean Dupont",
-        email: "jean.dupont@example.com",
-        age: 45,
-        gender: "male",
-        weight: 75,
-        height: 175,
-        medications: ["Amlodipine 5mg"],
-        medicalConditions: ["Hypertension légère"]
-      };
-
-      localStorage.setItem("user", JSON.stringify(defaultUser));
-      setUser(defaultUser);
+    
+    // Charger les mesures depuis l'API
+    async function fetchMeasurements() {
+      setFetchingMeasurements(true);
+      setErrorMessage("");
+      
+      try {
+        const response = await measurementService.getUserMeasurements(user.id, token);
+        
+        if (response.status === 200) {
+          setMeasurements(response.data.measurements || []);
+        } else {
+          setErrorMessage(response.error || "Erreur lors du chargement des mesures");
+          // Fallback au localStorage
+          const storedMeasurements = localStorage.getItem("measurements");
+          if (storedMeasurements) {
+            setMeasurements(JSON.parse(storedMeasurements));
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des mesures:", error);
+        setErrorMessage("Impossible de se connecter au serveur");
+        // Fallback au localStorage
+        const storedMeasurements = localStorage.getItem("measurements");
+        if (storedMeasurements) {
+          setMeasurements(JSON.parse(storedMeasurements));
+        }
+      } finally {
+        setFetchingMeasurements(false);
+      }
     }
-  }, []);
+    
+    fetchMeasurements();
+  }, [user, token]);
 
   // Enregistrer les mesures dans le localStorage
   useEffect(() => {
@@ -62,7 +91,7 @@ export default function Dashboard() {
     }
   }, [measurements]);
 
-  const addMeasurement = () => {
+  const addMeasurement = async () => {
     if (systolic < 60 || systolic > 250 || diastolic < 40 || diastolic > 150 || pulse < 40 || pulse > 200) {
       toast({
         title: "Valeurs incorrectes",
@@ -80,32 +109,77 @@ export default function Dashboard() {
     // Détermination de la couleur selon la classification
     const color = getClassificationColor(classification);
 
-    const newMeasurement: Measurement = {
-      id: uuidv4(),
-      date: new Date().toISOString(),
+    const measurementData = {
       systolic,
       diastolic,
       pulse,
-      notes,
+      notes: notes || "",
+      date: new Date().toISOString(),
+      classification,
       userId: user?.id || "unknown"
     };
 
-    setMeasurements(prev => [newMeasurement, ...prev]);
-
-    // Réinitialiser le formulaire
-    setSystolic(120);
-    setDiastolic(80);
-    setPulse(70);
-    setNotes("");
-
-    toast({
-      title: "Mesure ajoutée",
-      description: `Tension: ${systolic}/${diastolic} mmHg, Pouls: ${pulse} bpm`,
-    });
-
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
+    try {
+      // Si connecté à l'API, envoyer la mesure au serveur
+      if (user?.id && token) {
+        const response = await measurementService.addMeasurement(measurementData, token);
+        
+        if (response.status === 201) {
+          // Mesure ajoutée avec succès via l'API
+          // Actualiser les mesures en ajoutant celle qui vient d'être créée
+          setMeasurements(prev => [response.data, ...prev]);
+          
+          toast({
+            title: "Mesure ajoutée au serveur",
+            description: `Tension: ${systolic}/${diastolic} mmHg, Pouls: ${pulse} bpm`,
+          });
+        } else {
+          // Erreur lors de l'ajout via l'API, fallback au localStorage
+          handleLocalMeasurementAddition(measurementData);
+          toast({
+            title: "Erreur de connexion au serveur",
+            description: "La mesure a été enregistrée localement.",
+            variant: "warning",
+          });
+        }
+      } else {
+        // Pas connecté à l'API, utiliser le localStorage
+        handleLocalMeasurementAddition(measurementData);
+        toast({
+          title: "Mesure ajoutée localement",
+          description: `Tension: ${systolic}/${diastolic} mmHg, Pouls: ${pulse} bpm`,
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la mesure:", error);
+      // Fallback au localStorage en cas d'erreur
+      handleLocalMeasurementAddition(measurementData);
+      toast({
+        title: "Erreur lors de l'ajout",
+        description: "La mesure a été enregistrée localement.",
+        variant: "warning",
+      });
+    } finally {
+      // Réinitialiser le formulaire
+      setSystolic(120);
+      setDiastolic(80);
+      setPulse(70);
+      setNotes("");
+      
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
+    }
+  };
+  
+  // Fonction utilitaire pour ajouter une mesure au localStorage
+  const handleLocalMeasurementAddition = (measurementData: any) => {
+    const localMeasurement: Measurement = {
+      ...measurementData,
+      id: uuidv4(),
+    };
+    
+    setMeasurements(prev => [localMeasurement, ...prev]);
   };
 
   // Classification de la pression artérielle selon les normes OMS
