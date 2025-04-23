@@ -94,17 +94,21 @@ export class OpenRouterService {
     const mergedOptions = { ...defaultOptions, ...options };
 
     try {
+      console.log('Envoi de la requête OpenRouter avec la clé API', this.apiKey.substring(0, 10) + '...');
+      
       const response = await fetch(`${this.apiUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`,
-          'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://t-cardio-ai.netlify.app',
+          'HTTP-Referer': 'https://t-cardio-ai.netlify.app', // Valeur statique pour éviter les problèmes de référent
           'X-Title': 'T-Cardio-AI',
         },
         body: JSON.stringify({
-          messages,
-          ...mergedOptions,
+          model: mergedOptions.model,
+          messages: messages,
+          temperature: mergedOptions.temperature,
+          max_tokens: mergedOptions.max_tokens,
         }),
       });
 
