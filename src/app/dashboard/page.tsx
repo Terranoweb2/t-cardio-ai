@@ -56,10 +56,20 @@ export default function Dashboard() {
       setErrorMessage("");
       
       try {
-        const response = await measurementService.getUserMeasurements(user.id, token);
+        // Vérification de sécurité pour éviter les erreurs null
+        if (!user?.id) return;
+        
+        const response = await measurementService.getUserMeasurements(user.id, token as string);
         
         if (response.status === 200) {
-          setMeasurements(response.data.measurements || []);
+          // Adaptation des données de l'API au format local
+          const apiMeasurements = response.data.measurements || [];
+          const compatibleMeasurements = apiMeasurements.map(m => ({
+            ...m,
+            notes: m.notes || "", // S'assurer que notes est toujours une chaîne de caractères
+          })) as Measurement[];
+          
+          setMeasurements(compatibleMeasurements);
         } else {
           setErrorMessage(response.error || "Erreur lors du chargement des mesures");
           // Fallback au localStorage
@@ -122,12 +132,19 @@ export default function Dashboard() {
     try {
       // Si connecté à l'API, envoyer la mesure au serveur
       if (user?.id && token) {
-        const response = await measurementService.addMeasurement(measurementData, token);
+        const response = await measurementService.addMeasurement(measurementData, token as string);
         
         if (response.status === 201) {
           // Mesure ajoutée avec succès via l'API
           // Actualiser les mesures en ajoutant celle qui vient d'être créée
-          setMeasurements(prev => [response.data, ...prev]);
+          // Adaptation des données de l'API au format local
+          const apiMeasurement = response.data;
+          const compatibleMeasurement = {
+            ...apiMeasurement,
+            notes: apiMeasurement.notes || "", // S'assurer que notes est toujours une chaîne de caractères
+          } as Measurement;
+          
+          setMeasurements(prev => [compatibleMeasurement, ...prev]);
           
           toast({
             title: "Mesure ajoutée au serveur",
@@ -139,7 +156,7 @@ export default function Dashboard() {
           toast({
             title: "Erreur de connexion au serveur",
             description: "La mesure a été enregistrée localement.",
-            variant: "warning",
+            variant: "destructive",
           });
         }
       } else {
@@ -157,7 +174,7 @@ export default function Dashboard() {
       toast({
         title: "Erreur lors de l'ajout",
         description: "La mesure a été enregistrée localement.",
-        variant: "warning",
+        variant: "destructive",
       });
     } finally {
       // Réinitialiser le formulaire
