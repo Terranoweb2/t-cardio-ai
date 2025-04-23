@@ -274,7 +274,10 @@ export default function HistoryPage() {
   };
 
   // Obtenir l'icône correspondant à la classification
-  const getIcon = (classification: string) => {
+  const getIcon = (classification: string | undefined) => {
+    if (!classification) {
+      return <CheckCircle className="h-4 w-4" />;
+    }
     if (classification.includes("Hypertension sévère")) {
       return <AlertTriangle className="h-4 w-4" />;
     }
