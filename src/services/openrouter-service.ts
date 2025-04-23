@@ -41,15 +41,15 @@ export type OpenRouterOptions = {
 
 // Modèles disponibles sur OpenRouter
 export const OPENROUTER_MODELS = {
-  GPT_4: 'openai/gpt-4-turbo',
+  GPT_4: 'openai/gpt-4o',
   GPT_3_5: 'openai/gpt-3.5-turbo',
   CLAUDE: 'anthropic/claude-3-opus',
   CLAUDE_HAIKU: 'anthropic/claude-3-haiku',
   LLAMA_3: 'meta/llama-3-70b-instruct',
   MISTRAL: 'mistralai/mistral-7b',
-  MEDICAL_SPECIALIZED: 'anthropic/claude-3-opus', // Utilisation de Claude pour les analyses médicales spécialisées
-  CARDIOLOGY_FOCUSED: 'openai/gpt-4-turbo', // GPT-4 pour des analyses cardiologiques poussées
-  TREND_ANALYSIS: 'meta/llama-3-70b-instruct', // Llama 3 pour l'analyse de tendances
+  MEDICAL_SPECIALIZED: 'openai/gpt-4o', // Utilisation de GPT-4o pour les analyses médicales spécialisées
+  CARDIOLOGY_FOCUSED: 'openai/gpt-4o', // GPT-4o pour des analyses cardiologiques poussées
+  TREND_ANALYSIS: 'openai/gpt-4o', // GPT-4o pour l'analyse de tendances
 };
 
 /**
