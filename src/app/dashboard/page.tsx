@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, LineChart, Activity, Heart, History, Calendar, Sparkles } from "lucide-react";
-import BloodPressureChart from "@/components/ui/blood-pressure-chart";
+import { BloodPressureChart } from "@/components/ui/blood-pressure-chart";
 import type { Measurement, PatientInfo } from "@/lib/types";
 import { v4 as uuidv4 } from 'uuid';
 import useOpenRouter from "@/hooks/use-openrouter";
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const router = useRouter();
   const [systolic, setSystolic] = useState<number>(120);
   const [diastolic, setDiastolic] = useState<number>(80);
   const [pulse, setPulse] = useState<number>(70);
@@ -366,6 +368,7 @@ export default function Dashboard() {
                   <BloodPressureChart
                     data={measurements.slice(0, 10).reverse()}
                     height={300}
+                    timeFrame="all"
                   />
                 </CardContent>
               </Card>
@@ -381,13 +384,22 @@ export default function Dashboard() {
                       Analyse de vos dernières mesures par intelligence artificielle
                     </CardDescription>
                   </div>
-                  <Button
-                    onClick={analyzeLastMeasurements}
-                    disabled={analyzing || measurements.length === 0}
-                    size="sm"
-                  >
-                    {analyzing ? "Analyse en cours..." : "Analyser mes données"}
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => router.push('/dashboard/advanced-analysis')}
+                      size="sm"
+                    >
+                      Analyse avancée
+                    </Button>
+                    <Button
+                      onClick={analyzeLastMeasurements}
+                      disabled={analyzing || measurements.length === 0}
+                      size="sm"
+                    >
+                      {analyzing ? "Analyse en cours..." : "Analyser mes données"}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {openAIAnalysis ? (

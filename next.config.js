@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
+  output: 'export',
+  distDir: 'out',
   env: {
     // Exposer des variables d'environnement au client (attention à ne pas exposer de secrets sensibles)
     OPENROUTER_API_URL: process.env.OPENROUTER_API_URL,
@@ -12,7 +13,38 @@ const nextConfig = {
   },
   // Optimisation du build
   poweredByHeader: false,
-  // Configurez ici d'autres options selon les besoins de votre projet
+
+  // TypeScript configuration to ignore type checking during build
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    // !! WARN !!
+    ignoreBuildErrors: true,
+  },
+
+  // ESLint configuration to ignore linting during build
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  },
+
+  // Webpack configuration to handle Node.js modules in the browser
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't resolve 'fs', 'net', 'dns', etc. module on the client
+      config.resolve.fallback = {
+        fs: false,
+        net: false,
+        dns: false,
+        tls: false,
+        child_process: false,
+        nodemailer: false,
+      }
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig

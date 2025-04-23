@@ -8,6 +8,8 @@ import openRouterService, {
 } from '@/services/openrouter-service';
 import type { Measurement, PatientInfo } from '@/lib/types';
 
+type AnalysisType = 'general' | 'specialized' | 'cardio';
+
 /**
  * Hook personnalisé pour interagir avec l'API OpenRouter
  */
@@ -42,13 +44,66 @@ export function useOpenRouter() {
    */
   const analyzeHealthData = async (
     data: string,
-    prompt?: string
+    prompt?: string,
+    analysisType: AnalysisType = 'general'
   ): Promise<string> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      return await openRouterService.analyzeHealthData(data, prompt);
+      return await openRouterService.analyzeHealthData(data, prompt, analysisType);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      return '';
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Analyse des tendances dans les mesures
+   */
+  const analyzeTrends = async (
+    measurements: Measurement[],
+    patientInfo: PatientInfo,
+    period?: string
+  ): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      return await openRouterService.analyzeTrends(measurements, patientInfo, period);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      return '';
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Analyse comparative entre deux périodes
+   */
+  const compareTimePeriods = async (
+    periodA: Measurement[],
+    periodB: Measurement[],
+    patientInfo: PatientInfo,
+    periodAName?: string,
+    periodBName?: string
+  ): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      return await openRouterService.compareTimePeriods(
+        periodA,
+        periodB,
+        patientInfo,
+        periodAName,
+        periodBName
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
       setError(errorMessage);
@@ -84,10 +139,101 @@ export function useOpenRouter() {
     }
   };
 
+  /**
+   * Prédire les tendances futures basées sur les mesures passées
+   */
+  const predictTrends = async (
+    measurements: Measurement[],
+    patientInfo: PatientInfo,
+    predictionDays = 30
+  ): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      return await openRouterService.predictTrends(
+        measurements,
+        patientInfo,
+        predictionDays
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      return '';
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Analyser l'impact des facteurs externes sur les mesures
+   */
+  const analyzeExternalFactors = async (
+    measurements: Measurement[],
+    patientInfo: PatientInfo,
+    externalFactors: {
+      medications: { name: string, dosage: string, timing: string, startDate?: string }[];
+      activities: { type: string, duration: number, intensity: string, date: string }[];
+      diet: { salt: 'low' | 'medium' | 'high', alcohol: boolean, caffeine: boolean }[];
+      stress: { level: number, date: string }[];
+      sleep: { hours: number, quality: number, date: string }[];
+    }
+  ): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      return await openRouterService.analyzeExternalFactors(
+        measurements,
+        patientInfo,
+        externalFactors
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      return '';
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Générer un plan personnalisé d'amélioration
+   */
+  const generatePersonalizedPlan = async (
+    measurements: Measurement[],
+    patientInfo: PatientInfo,
+    targetValues: { systolic: number, diastolic: number },
+    timeframe = 30
+  ): Promise<string> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      return await openRouterService.generatePersonalizedPlan(
+        measurements,
+        patientInfo,
+        targetValues,
+        timeframe
+      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      return '';
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     sendMessage,
     analyzeHealthData,
+    analyzeTrends,
+    compareTimePeriods,
     generateHealthReport,
+    predictTrends,
+    analyzeExternalFactors,
+    generatePersonalizedPlan,
     isLoading,
     error,
     models: OPENROUTER_MODELS,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Heart, User, BarChart3, Share2, FileText } from "lucide-react";
+import {
+  LogOut,
+  Heart,
+  User,
+  BarChart3,
+  Share2,
+  FileText,
+  Home,
+  History,
+  LineChart,
+} from "lucide-react";
 
 // Définir l'interface pour l'utilisateur
 interface UserProfile {
@@ -36,6 +46,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<UserProfile | null>(null);
 
   useEffect(() => {
@@ -54,16 +65,10 @@ export default function DashboardLayout({
   };
 
   if (!user) {
-    return <div className="flex items-center justify-center h-screen">Chargement...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">Chargement...</div>
+    );
   }
-
-  const navItems = [
-    { label: "Saisie", href: "/dashboard", icon: <Heart className="mr-2 h-4 w-4" /> },
-    { label: "Historique", href: "/dashboard/history", icon: <BarChart3 className="mr-2 h-4 w-4" /> },
-    { label: "Partage", href: "/dashboard/share", icon: <Share2 className="mr-2 h-4 w-4" /> },
-    { label: "Rapports", href: "/dashboard/reports", icon: <FileText className="mr-2 h-4 w-4" /> },
-    { label: "Profil", href: "/dashboard/profile", icon: <User className="mr-2 h-4 w-4" /> },
-  ];
 
   return (
     <>
@@ -80,27 +85,108 @@ export default function DashboardLayout({
                   className="h-12 w-12 object-contain mr-3 logo-heartbeat"
                   loading="lazy"
                 />
-                <span className="text-2xl font-bold text-primary logo-animation">T-Cardio AI</span>
+                <span className="text-2xl font-bold text-primary logo-animation">
+                  T-Cardio AI
+                </span>
               </Link>
             </div>
-            <div className="flex-1 overflow-auto py-4">
-              <nav className="space-y-1 px-2">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center px-4 py-2 text-sm rounded-md hover:bg-muted hover:text-primary transition-colors"
-                  >
-                    {item.icon}
-                    {item.label}
-                  </Link>
-                ))}
+            <div className="flex-1 overflow-auto py-4 px-2">
+              <nav className="space-y-1">
+                <Link
+                  href="/dashboard"
+                  className={`
+                    flex items-center px-3 py-2 text-sm rounded-md
+                    ${
+                      pathname === "/dashboard"
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <Home className="mr-3 h-5 w-5 flex-shrink-0" />
+                  Tableau de bord
+                </Link>
+                <Link
+                  href="/dashboard/history"
+                  className={`
+                    flex items-center px-3 py-2 text-sm rounded-md
+                    ${
+                      pathname === "/dashboard/history"
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <History className="mr-3 h-5 w-5 flex-shrink-0" />
+                  Historique
+                </Link>
+                <Link
+                  href="/dashboard/reports"
+                  className={`
+                    flex items-center px-3 py-2 text-sm rounded-md
+                    ${
+                      pathname === "/dashboard/reports"
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <FileText className="mr-3 h-5 w-5 flex-shrink-0" />
+                  Rapports
+                </Link>
+                <Link
+                  href="/dashboard/advanced-analysis"
+                  className={`
+                    flex items-center px-3 py-2 text-sm rounded-md
+                    ${
+                      pathname === "/dashboard/advanced-analysis"
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <LineChart className="mr-3 h-5 w-5 flex-shrink-0 text-blue-600" />
+                  Analyse avancée
+                </Link>
+                <Link
+                  href="/dashboard/profile"
+                  className={`
+                    flex items-center px-3 py-2 text-sm rounded-md
+                    ${
+                      pathname === "/dashboard/profile"
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <User className="mr-3 h-5 w-5 flex-shrink-0" />
+                  Profil
+                </Link>
+                <Link
+                  href="/dashboard/share"
+                  className={`
+                    flex items-center px-3 py-2 text-sm rounded-md
+                    ${
+                      pathname === "/dashboard/share"
+                        ? "bg-gray-100 text-gray-900 font-medium"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }
+                  `}
+                >
+                  <Share2 className="mr-3 h-5 w-5 flex-shrink-0" />
+                  Partager
+                </Link>
               </nav>
             </div>
             <div className="p-4 border-t border-border">
               <div className="flex items-center">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`} alt={user.name} />
+                  <AvatarImage
+                    src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                      user.name
+                    )}`}
+                    alt={user.name}
+                  />
                   <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="ml-3">
@@ -122,14 +208,21 @@ export default function DashboardLayout({
                 className="h-9 w-9 object-contain mr-2 logo-heartbeat"
                 loading="lazy"
               />
-              <span className="text-xl font-bold text-primary logo-animation">T-Cardio AI</span>
+              <span className="text-xl font-bold text-primary logo-animation">
+                T-Cardio AI
+              </span>
             </Link>
             <div className="flex items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`} alt={user.name} />
+                      <AvatarImage
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          user.name
+                        )}`}
+                        alt={user.name}
+                      />
                       <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
@@ -137,16 +230,65 @@ export default function DashboardLayout({
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {navItems.map((item) => (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <Link href={item.href} className="flex items-center cursor-pointer">
-                        {item.icon}
-                        {item.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <Home className="mr-2 h-4 w-4" />
+                      Tableau de bord
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard/history"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <History className="mr-2 h-4 w-4" />
+                      Historique
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard/reports"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      Rapports
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard/advanced-analysis"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <LineChart className="mr-2 h-4 w-4 text-blue-600" />
+                      Analyse avancée
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard/profile"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Profil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/dashboard/share"
+                      className="flex items-center cursor-pointer"
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Partage
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive cursor-pointer"
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
                     Déconnexion
                   </DropdownMenuItem>
@@ -156,7 +298,9 @@ export default function DashboardLayout({
           </header>
 
           {/* Page content */}
-          <main className="flex-1 overflow-auto p-4 md:p-6 bg-background">{children}</main>
+          <main className="flex-1 overflow-auto p-4 md:p-6 bg-background">
+            {children}
+          </main>
         </div>
       </div>
     </>

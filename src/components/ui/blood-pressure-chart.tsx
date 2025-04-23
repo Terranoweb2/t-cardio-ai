@@ -34,19 +34,27 @@ interface Measurement {
   diastolic: number;
   pulse: number;
   notes: string;
-  classification: string;
-  color: string;
+  userId?: string;
+  classification?: string;
+  color?: string;
 }
 
 interface BloodPressureChartProps {
-  measurements: Measurement[];
-  timeFrame: 'week' | 'month' | 'all';
+  data?: Measurement[];
+  measurements?: Measurement[];
+  timeFrame?: 'week' | 'month' | 'all';
+  height?: number;
 }
 
-export function BloodPressureChart({ measurements, timeFrame }: BloodPressureChartProps) {
+export function BloodPressureChart({ data, measurements, timeFrame = 'all', height = 350 }: BloodPressureChartProps) {
+  // Utiliser data ou measurements selon ce qui est fourni
+  const chartMeasurements = useMemo(() => {
+    return data || measurements || [];
+  }, [data, measurements]);
+
   // Filtrer les mesures selon la période sélectionnée
   const filteredMeasurements = useMemo(() => {
-    if (timeFrame === 'all') return measurements;
+    if (timeFrame === 'all' || !timeFrame) return chartMeasurements;
 
     const now = dayjs();
     let startDate: dayjs.Dayjs;
@@ -59,11 +67,11 @@ export function BloodPressureChart({ measurements, timeFrame }: BloodPressureCha
       startDate = now.subtract(30, 'day'); // Défaut: 1 mois
     }
 
-    return measurements.filter(m => {
+    return chartMeasurements.filter(m => {
       const measureDate = dayjs(m.date);
       return measureDate.isAfter(startDate);
     });
-  }, [measurements, timeFrame]);
+  }, [chartMeasurements, timeFrame]);
 
   // Trier les mesures par date (ascendant)
   const sortedData = useMemo(() => {
@@ -153,7 +161,8 @@ export function BloodPressureChart({ measurements, timeFrame }: BloodPressureCha
 
               if (label === 'Systolique' || label === 'Diastolique') {
                 return `${label}: ${value} mmHg`;
-              } else if (label === 'Pouls') {
+              }
+              if (label === 'Pouls') {
                 return `${label}: ${value} bpm`;
               }
               return `${label}: ${value}`;
@@ -191,7 +200,7 @@ export function BloodPressureChart({ measurements, timeFrame }: BloodPressureCha
   }
 
   return (
-    <div style={{ height: '350px' }}>
+    <div style={{ height: height ? `${height}px` : '350px' }}>
       <Line data={chartData} options={options} />
     </div>
   );

@@ -1,513 +1,458 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
-import {
-  User,
-  Mail,
-  Phone,
-  Heart,
-  Building,
-  Calendar,
-  Edit,
-  Save,
-  Stethoscope,
-} from "lucide-react";
-
-interface DoctorInfo {
-  id: string;
-  name: string;
-  speciality: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-}
+import type { PatientInfo } from "@/lib/types";
+import { User, Bell, Clock, Settings, Trash2, Plus, Save, Calendar } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface UserProfile {
   id: string;
   name: string;
   email: string;
-  role: "patient" | "doctor";
-  birthdate?: string;
-  phone?: string;
-  address?: string;
-  medicalInfo?: string;
-  allergies?: string;
-  medications?: string;
-  doctor?: DoctorInfo;
+  age?: number;
+  gender?: string;
+  weight?: number;
+  height?: number;
+  medications?: string[];
+  medicalConditions?: string[];
 }
 
-type EditableUserProfile = UserProfile;
+interface ReminderSetting {
+  id: string;
+  enabled: boolean;
+  time: string;
+  days: string[];
+  message: string;
+}
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<EditableUserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile>({
+    id: "",
+    name: "",
+    email: "",
+  });
+  const [activeTab, setActiveTab] = useState("profile");
+  const [reminders, setReminders] = useState<ReminderSetting[]>([]);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
 
-  // Chargement des données utilisateur depuis le localStorage
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const userData = JSON.parse(storedUser) as UserProfile;
-        setUser(userData);
-        setFormData(userData);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des données utilisateur:", error);
+    // Charger le profil utilisateur depuis le localStorage
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setProfile({
+        id: userData.id || "",
+        name: userData.displayName || "",
+        email: userData.email || "",
+        age: userData.age,
+        gender: userData.gender,
+        weight: userData.weight,
+        height: userData.height,
+        medications: userData.medications || [],
+        medicalConditions: userData.medicalConditions || [],
+      });
     }
+
+    // Charger les préférences de rappel
+    const storedReminders = localStorage.getItem("reminders");
+    if (storedReminders) {
+      setReminders(JSON.parse(storedReminders));
+    } else {
+      // Créer un rappel par défaut
+      setReminders([{
+        id: Date.now().toString(),
+        enabled: false,
+        time: "08:00",
+        days: ["Lun", "Mer", "Ven"],
+        message: "N'oubliez pas de prendre votre tension artérielle!"
+      }]);
+    }
+
+    // Vérifier si les notifications sont activées
+    const notifEnabled = localStorage.getItem("notificationsEnabled");
+    setNotificationsEnabled(notifEnabled === "true");
   }, []);
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    if (!formData) return;
+  const saveProfile = () => {
+    // Convertir le profil au format attendu par l'application
+    const userData: PatientInfo = {
+      id: profile.id,
+      displayName: profile.name,
+      email: profile.email,
+      age: profile.age,
+      gender: profile.gender as 'male' | 'female' | 'other',
+      weight: profile.weight,
+      height: profile.height,
+      medications: profile.medications,
+      medicalConditions: profile.medicalConditions,
+    };
 
-    const { name, value } = e.target;
-
-    // Gérer les champs imbriqués (pour les informations du médecin)
-    if (name.startsWith("doctor.")) {
-      const doctorField = name.split(".")[1] as keyof DoctorInfo;
-      const updatedDoctor: DoctorInfo = {
-        id: formData.doctor?.id || "doc-temp",
-        name: formData.doctor?.name || "",
-        speciality: formData.doctor?.speciality || "",
-        phone: formData.doctor?.phone || "",
-        email: formData.doctor?.email || "",
-        address: formData.doctor?.address || "",
-        ...(formData.doctor || {}),
-        [doctorField]: value,
-      };
-
-      setFormData({
-        ...formData,
-        doctor: updatedDoctor,
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      });
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData) return;
-
-    localStorage.setItem("user", JSON.stringify(formData));
-    setUser(formData);
-    setIsEditing(false);
+    // Sauvegarder dans le localStorage
+    localStorage.setItem("user", JSON.stringify(userData));
 
     toast({
       title: "Profil mis à jour",
-      description: "Vos informations ont été enregistrées avec succès",
+      description: "Vos informations ont été enregistrées avec succès.",
     });
   };
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        Chargement...
-      </div>
+  const addReminder = () => {
+    const newReminder: ReminderSetting = {
+      id: Date.now().toString(),
+      enabled: true,
+      time: "09:00",
+      days: ["Lun", "Mar", "Mer", "Jeu", "Ven"],
+      message: "Prenez votre tension artérielle",
+    };
+    setReminders([...reminders, newReminder]);
+    saveReminders([...reminders, newReminder]);
+  };
+
+  const removeReminder = (id: string) => {
+    const updatedReminders = reminders.filter((r) => r.id !== id);
+    setReminders(updatedReminders);
+    saveReminders(updatedReminders);
+  };
+
+  const updateReminder = (id: string, field: keyof ReminderSetting, value: any) => {
+    const updatedReminders = reminders.map((reminder) =>
+      reminder.id === id ? { ...reminder, [field]: value } : reminder
     );
-  }
+    setReminders(updatedReminders);
+    saveReminders(updatedReminders);
+  };
+
+  const saveReminders = (remindersToSave: ReminderSetting[]) => {
+    localStorage.setItem("reminders", JSON.stringify(remindersToSave));
+
+    toast({
+      title: "Rappels mis à jour",
+      description: "Vos paramètres de rappel ont été enregistrés avec succès.",
+    });
+  };
+
+  const toggleNotifications = (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    localStorage.setItem("notificationsEnabled", enabled.toString());
+
+    if (enabled) {
+      // Demander la permission pour les notifications du navigateur
+      if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            toast({
+              title: "Notifications activées",
+              description: "Vous recevrez désormais des rappels pour prendre votre tension.",
+            });
+          } else {
+            toast({
+              title: "Permission refusée",
+              description: "Les notifications ne peuvent pas être activées sans votre permission.",
+              variant: "destructive",
+            });
+            setNotificationsEnabled(false);
+            localStorage.setItem("notificationsEnabled", "false");
+          }
+        });
+      }
+    } else {
+      toast({
+        title: "Notifications désactivées",
+        description: "Vous ne recevrez plus de rappels pour prendre votre tension.",
+      });
+    }
+  };
+
+  const toggleReminderDay = (reminderId: string, day: string) => {
+    const reminder = reminders.find(r => r.id === reminderId);
+    if (!reminder) return;
+
+    let updatedDays: string[];
+    if (reminder.days.includes(day)) {
+      updatedDays = reminder.days.filter(d => d !== day);
+    } else {
+      updatedDays = [...reminder.days, day];
+    }
+
+    updateReminder(reminderId, 'days', updatedDays);
+  };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Mon profil</h1>
+    <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-6">Paramètres du profil</h1>
 
-      <div className="grid gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="flex items-center">
-              <Avatar className="h-12 w-12 mr-4">
-                <AvatarImage
-                  src={`https://ui-avatars.com/api/?name=${user.name}`}
-                  alt={user.name}
-                />
-                <AvatarFallback>
-                  {user.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle>{user.name}</CardTitle>
-                <CardDescription>{user.email}</CardDescription>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 mb-6">
+          <TabsTrigger value="profile" className="flex items-center">
+            <User className="mr-2 h-4 w-4" />
+            Profil
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center">
+            <Bell className="mr-2 h-4 w-4" />
+            Rappels
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informations personnelles</CardTitle>
+              <CardDescription>
+                Gérez vos informations personnelles et médicales
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nom complet</Label>
+                  <Input
+                    id="name"
+                    value={profile.name}
+                    onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile.email}
+                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="age">Âge</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    value={profile.age || ""}
+                    onChange={(e) => setProfile({ ...profile, age: Number.parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Genre</Label>
+                  <Select
+                    value={profile.gender || ""}
+                    onValueChange={(value) => setProfile({ ...profile, gender: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez un genre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Homme</SelectItem>
+                      <SelectItem value="female">Femme</SelectItem>
+                      <SelectItem value="other">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Poids (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    value={profile.weight || ""}
+                    onChange={(e) => setProfile({ ...profile, weight: Number.parseFloat(e.target.value) || undefined })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="height">Taille (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={profile.height || ""}
+                    onChange={(e) => setProfile({ ...profile, height: Number.parseFloat(e.target.value) || undefined })}
+                  />
+                </div>
               </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!isEditing) {
-                  // On entre en mode édition, on prend le dernier user à jour
-                  setFormData(user);
-                }
-                setIsEditing(!isEditing);
-              }}
-            >
-              {isEditing ? (
-                <>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Annuler
-                </>
-              ) : (
-                <>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Modifier
-                </>
-              )}
-            </Button>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-6">
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="name"
-                      className="text-sm font-medium flex items-center"
-                    >
-                      <User className="mr-2 h-4 w-4 text-gray-500" />
-                      Nom complet
-                    </label>
-                    {isEditing ? (
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData?.name || ""}
-                        onChange={handleInputChange}
-                        placeholder="Votre nom complet"
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                        {user.name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="email"
-                      className="text-sm font-medium flex items-center"
-                    >
-                      <Mail className="mr-2 h-4 w-4 text-gray-500" />
-                      Email
-                    </label>
-                    {isEditing ? (
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData?.email || ""}
-                        onChange={handleInputChange}
-                        placeholder="Votre adresse email"
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                        {user.email}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="phone"
-                      className="text-sm font-medium flex items-center"
-                    >
-                      <Phone className="mr-2 h-4 w-4 text-gray-500" />
-                      Téléphone
-                    </label>
-                    {isEditing ? (
-                      <Input
-                        id="phone"
-                        name="phone"
-                        value={formData?.phone || ""}
-                        onChange={handleInputChange}
-                        placeholder="Votre numéro de téléphone"
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                        {user.phone || "Non renseigné"}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="birthdate"
-                      className="text-sm font-medium flex items-center"
-                    >
-                      <Calendar className="mr-2 h-4 w-4 text-gray-500" />
-                      Date de naissance
-                    </label>
-                    {isEditing ? (
-                      <Input
-                        id="birthdate"
-                        name="birthdate"
-                        type="date"
-                        value={formData?.birthdate || ""}
-                        onChange={handleInputChange}
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                        {user.birthdate || "Non renseignée"}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-1 md:col-span-2">
-                    <label
-                      htmlFor="address"
-                      className="text-sm font-medium flex items-center"
-                    >
-                      <Building className="mr-2 h-4 w-4 text-gray-500" />
-                      Adresse
-                    </label>
-                    {isEditing ? (
-                      <Textarea
-                        id="address"
-                        name="address"
-                        value={formData?.address || ""}
-                        onChange={handleInputChange}
-                        placeholder="Votre adresse complète"
-                        rows={2}
-                      />
-                    ) : (
-                      <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                        {user.address || "Non renseignée"}
-                      </p>
-                    )}
-                  </div>
+
+              {/* Section médicale */}
+              <div className="space-y-2 pt-4 border-t">
+                <h3 className="text-lg font-medium">Informations médicales</h3>
+                <p className="text-sm text-gray-500">
+                  Ces informations sont utilisées pour personnaliser les analyses et les recommandations
+                </p>
+
+                <div className="space-y-2">
+                  <Label htmlFor="medications">Médicaments (séparés par des virgules)</Label>
+                  <Input
+                    id="medications"
+                    value={profile.medications?.join(", ") || ""}
+                    onChange={(e) =>
+                      setProfile({
+                        ...profile,
+                        medications: e.target.value.split(",").map((med) => med.trim()).filter(Boolean),
+                      })
+                    }
+                    placeholder="Ex: Amlodipine 5mg, Lisinopril 10mg"
+                  />
                 </div>
 
-                {user.role === "patient" && (
-                  <>
-                    <div className="border-t pt-6 mt-6">
-                      <h3 className="font-medium mb-4 flex items-center">
-                        <Heart className="mr-2 h-5 w-5 text-red-500" />
-                        Informations médicales
-                      </h3>
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <div className="space-y-1 md:col-span-2">
-                          <label
-                            htmlFor="medicalInfo"
-                            className="text-sm font-medium"
-                          >
-                            Antécédents médicaux
-                          </label>
-                          {isEditing ? (
-                            <Textarea
-                              id="medicalInfo"
-                              name="medicalInfo"
-                              value={formData?.medicalInfo || ""}
-                              onChange={handleInputChange}
-                              placeholder="Vos antécédents médicaux..."
-                              rows={3}
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.medicalInfo ||
-                                "Aucun antécédent renseigné"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label
-                            htmlFor="allergies"
-                            className="text-sm font-medium"
-                          >
-                            Allergies
-                          </label>
-                          {isEditing ? (
-                            <Textarea
-                              id="allergies"
-                              name="allergies"
-                              value={formData?.allergies || ""}
-                              onChange={handleInputChange}
-                              placeholder="Vos allergies..."
-                              rows={2}
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.allergies ||
-                                "Aucune allergie renseignée"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label
-                            htmlFor="medications"
-                            className="text-sm font-medium"
-                          >
-                            Médicaments actuels
-                          </label>
-                          {isEditing ? (
-                            <Textarea
-                              id="medications"
-                              name="medications"
-                              value={formData?.medications || ""}
-                              onChange={handleInputChange}
-                              placeholder="Vos médicaments..."
-                              rows={2}
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.medications ||
-                                "Aucun médicament renseigné"}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="border-t pt-6 mt-6">
-                      <h3 className="font-medium mb-4 flex items-center">
-                        <Stethoscope className="mr-2 h-5 w-5 text-blue-500" />
-                        Mon médecin traitant
-                      </h3>
-                      <div className="grid gap-5 md:grid-cols-2">
-                        <div className="space-y-1">
-                          <label
-                            htmlFor="doctor.name"
-                            className="text-sm font-medium"
-                          >
-                            Nom du médecin
-                          </label>
-                          {isEditing ? (
-                            <Input
-                              id="doctor.name"
-                              name="doctor.name"
-                              value={formData?.doctor?.name || ""}
-                              onChange={handleInputChange}
-                              placeholder="Nom de votre médecin"
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.doctor?.name || "Non renseigné"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label
-                            htmlFor="doctor.speciality"
-                            className="text-sm font-medium"
-                          >
-                            Spécialité
-                          </label>
-                          {isEditing ? (
-                            <Input
-                              id="doctor.speciality"
-                              name="doctor.speciality"
-                              value={formData?.doctor?.speciality || ""}
-                              onChange={handleInputChange}
-                              placeholder="Spécialité de votre médecin"
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.doctor?.speciality ||
-                                "Non renseignée"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label
-                            htmlFor="doctor.email"
-                            className="text-sm font-medium"
-                          >
-                            Email du médecin
-                          </label>
-                          {isEditing ? (
-                            <Input
-                              id="doctor.email"
-                              name="doctor.email"
-                              type="email"
-                              value={formData?.doctor?.email || ""}
-                              onChange={handleInputChange}
-                              placeholder="Email de votre médecin"
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.doctor?.email || "Non renseigné"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label
-                            htmlFor="doctor.phone"
-                            className="text-sm font-medium"
-                          >
-                            Téléphone du médecin
-                          </label>
-                          {isEditing ? (
-                            <Input
-                              id="doctor.phone"
-                              name="doctor.phone"
-                              value={formData?.doctor?.phone || ""}
-                              onChange={handleInputChange}
-                              placeholder="Téléphone de votre médecin"
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.doctor?.phone || "Non renseigné"}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1 md:col-span-2">
-                          <label
-                            htmlFor="doctor.address"
-                            className="text-sm font-medium"
-                          >
-                            Adresse du cabinet
-                          </label>
-                          {isEditing ? (
-                            <Textarea
-                              id="doctor.address"
-                              name="doctor.address"
-                              value={formData?.doctor?.address || ""}
-                              onChange={handleInputChange}
-                              placeholder="Adresse du cabinet de votre médecin"
-                              rows={2}
-                            />
-                          ) : (
-                            <p className="text-sm py-2 px-3 rounded-md bg-gray-50">
-                              {user.doctor?.address ||
-                                "Non renseignée"}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {isEditing && (
-                  <div className="flex justify-end">
-                    <Button type="submit">
-                      <Save className="mr-2 h-4 w-4" />
-                      Enregistrer les modifications
-                    </Button>
-                  </div>
-                )}
+                <div className="space-y-2">
+                  <Label htmlFor="conditions">Conditions médicales (séparées par des virgules)</Label>
+                  <Input
+                    id="conditions"
+                    value={profile.medicalConditions?.join(", ") || ""}
+                    onChange={(e) =>
+                      setProfile({
+                        ...profile,
+                        medicalConditions: e.target.value.split(",").map((cond) => cond.trim()).filter(Boolean),
+                      })
+                    }
+                    placeholder="Ex: Hypertension, Diabète type 2"
+                  />
+                </div>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+
+              <div className="flex justify-end pt-4">
+                <Button onClick={saveProfile}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Enregistrer le profil
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle>Paramètres des rappels</CardTitle>
+              <CardDescription>
+                Configurez des rappels pour ne pas oublier de prendre vos mesures
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-0.5">
+                  <h4 className="text-sm font-medium">Activer les notifications</h4>
+                  <p className="text-xs text-gray-500">
+                    Recevez des rappels pour prendre régulièrement votre tension artérielle
+                  </p>
+                </div>
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={toggleNotifications}
+                />
+              </div>
+
+              {notificationsEnabled && (
+                <>
+                  <div className="border rounded-md p-4 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-sm font-medium">Mes rappels programmés</h4>
+                      <Button onClick={addReminder} size="sm" variant="outline">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Ajouter un rappel
+                      </Button>
+                    </div>
+
+                    {reminders.length === 0 ? (
+                      <div className="text-center py-4 text-gray-500">
+                        <Bell className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                        <p>Aucun rappel configuré</p>
+                        <p className="text-xs mt-1">
+                          Ajoutez un rappel pour être notifié quand prendre votre tension
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {reminders.map((reminder) => (
+                          <div key={reminder.id} className="border rounded-md p-3 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center">
+                                <Switch
+                                  checked={reminder.enabled}
+                                  onCheckedChange={(checked) => updateReminder(reminder.id, 'enabled', checked)}
+                                  className="mr-2"
+                                />
+                                <div>
+                                  <p className="text-sm font-medium">Rappel {reminder.enabled ? 'actif' : 'inactif'}</p>
+                                  <div className="flex items-center text-xs text-gray-500">
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    {reminder.time}
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeReminder(reminder.id)}
+                                className="h-8 w-8 p-0 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div>
+                                <Label htmlFor={`time-${reminder.id}`} className="text-xs">Heure</Label>
+                                <Input
+                                  id={`time-${reminder.id}`}
+                                  type="time"
+                                  value={reminder.time}
+                                  onChange={(e) => updateReminder(reminder.id, 'time', e.target.value)}
+                                  className="h-8"
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-xs block mb-1">Jours</Label>
+                                <div className="flex flex-wrap gap-1">
+                                  {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
+                                    <Button
+                                      key={day}
+                                      type="button"
+                                      variant={reminder.days.includes(day) ? "default" : "outline"}
+                                      size="sm"
+                                      className="h-7 px-2 text-xs"
+                                      onClick={() => toggleReminderDay(reminder.id, day)}
+                                    >
+                                      {day}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label htmlFor={`message-${reminder.id}`} className="text-xs">Message</Label>
+                                <Input
+                                  id={`message-${reminder.id}`}
+                                  value={reminder.message}
+                                  onChange={(e) => updateReminder(reminder.id, 'message', e.target.value)}
+                                  className="h-8"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-blue-50 p-4 rounded-md">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                      <Bell className="h-4 w-4 mr-2 text-blue-600" />
+                      Fonctionnement des rappels
+                    </h4>
+                    <p className="text-xs text-blue-700">
+                      Les rappels sont envoyés par notification du navigateur. Ils ne fonctionnent que lorsque le navigateur est ouvert et que vous avez autorisé les notifications. Pour une expérience optimale, nous vous recommandons d'installer T-Cardio AI en tant qu'application depuis votre navigateur.
+                    </p>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

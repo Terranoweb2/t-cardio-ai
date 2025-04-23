@@ -8,7 +8,9 @@ import { FileText, Download, Calendar, ArrowRight, Info, Sparkles } from "lucide
 import { jsPDF } from "jspdf";
 import dayjs from "dayjs";
 import useOpenRouter from "@/hooks/use-openrouter";
-import type { Measurement, PatientInfo } from "@/lib/types";
+import type { Measurement, PatientInfo, MedicalReport } from "@/lib/types";
+import ShareDialog from "./share-dialog";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ReportsPage() {
   const { toast } = useToast();
@@ -19,6 +21,7 @@ export default function ReportsPage() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState<boolean>(false);
   const [aiReport, setAiReport] = useState<string>("");
+  const [generatedReports, setGeneratedReports] = useState<MedicalReport[]>([]);
   const { generateHealthReport, isLoading, error } = useOpenRouter();
 
   // Chargement des données depuis le localStorage
@@ -33,10 +36,22 @@ export default function ReportsPage() {
       setUser(JSON.parse(storedUser) as PatientInfo);
     }
 
+    const storedReports = localStorage.getItem("reports");
+    if (storedReports) {
+      setGeneratedReports(JSON.parse(storedReports));
+    }
+
     // Initialiser la période
     updatePeriodLabel("month");
     // eslint-disable-next-line
   }, []);
+
+  // Sauvegarder les rapports dans le localStorage
+  useEffect(() => {
+    if (generatedReports.length > 0) {
+      localStorage.setItem("reports", JSON.stringify(generatedReports));
+    }
+  }, [generatedReports]);
 
   // Mettre à jour le libellé de la période sélectionnée
   const updatePeriodLabel = (period: "week" | "month" | "trimester" | "custom") => {
@@ -155,7 +170,7 @@ export default function ReportsPage() {
   };
 
   // Génération du rapport en PDF
-  const generateReport = () => {
+  const generateReport = async () => {
     setIsGenerating(true);
     setTimeout(() => {
       try {
@@ -318,6 +333,22 @@ export default function ReportsPage() {
           doc.text(`T-Cardio AI - Page ${i} sur ${pageCount}`, 105, 285, { align: "center" });
         }
 
+        // Créer un nouveau rapport pour le partage
+        const reportTitle = `Rapport de tension - ${dayjs().format("DD/MM/YYYY")}`;
+        const reportContent = aiReport || "Rapport de suivi de tension artérielle"; // Utiliser le rapport AI s'il existe
+
+        // Stocker le rapport généré pour le partage
+        const newReport: MedicalReport = {
+          id: uuidv4(),
+          title: reportTitle,
+          content: reportContent,
+          createdAt: new Date().toISOString(),
+          userId: user?.id || "unknown",
+          measurementIds: filteredMeasurements.map(m => m.id),
+        };
+
+        setGeneratedReports(prev => [newReport, ...prev]);
+
         // Sauvegarder le PDF
         doc.save(`rapport-tension-${dayjs().format("YYYY-MM-DD")}.pdf`);
 
@@ -381,6 +412,9 @@ export default function ReportsPage() {
   const hasMeasurements = filteredMeasurements.length > 0;
   const stats = getStats(filteredMeasurements);
 
+  // Récupérer le dernier rapport généré pour le partage
+  const latestReport = generatedReports.length > 0 ? generatedReports[0] : null;
+
   return (
     <div className="max-w-4xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Rapports</h1>
@@ -388,13 +422,23 @@ export default function ReportsPage() {
       <div className="grid gap-6 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center">
-              <FileText className="mr-2 h-5 w-5 text-blue-500" />
-              Générer un rapport de suivi
-            </CardTitle>
-            <CardDescription>
-              Créez un rapport PDF détaillé de vos mesures de tension artérielle
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className="flex items-center">
+                  <FileText className="mr-2 h-5 w-5 text-blue-500" />
+                  Générer un rapport de suivi
+                </CardTitle>
+                <CardDescription>
+                  Créez un rapport PDF détaillé de vos mesures de tension artérielle
+                </CardDescription>
+              </div>
+              {latestReport && (
+                <ShareDialog
+                  report={latestReport}
+                  userName={user?.displayName || "Utilisateur"}
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -548,6 +592,42 @@ export default function ReportsPage() {
             <Button asChild>
               <a href="/dashboard">Ajouter une mesure</a>
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Liste des rapports générés */}
+      {generatedReports.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Rapports générés</CardTitle>
+            <CardDescription>
+              Historique des rapports que vous avez créés
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {generatedReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md border hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 text-blue-500 mr-3" />
+                    <div>
+                      <p className="font-medium">{report.title}</p>
+                      <p className="text-xs text-gray-500">{formatDate(report.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <ShareDialog
+                      report={report}
+                      userName={user?.displayName || "Utilisateur"}
+                    />
+                    <Button variant="ghost" size="sm">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
