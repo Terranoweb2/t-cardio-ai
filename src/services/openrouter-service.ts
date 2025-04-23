@@ -61,11 +61,11 @@ export class OpenRouterService {
 
   constructor() {
     // Récupération des variables d'environnement
-    this.apiKey = process.env.OPENROUTER_API_KEY || '';
-    this.apiUrl = process.env.OPENROUTER_API_URL || 'https://openrouter.ai/api/v1';
+    this.apiKey = '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'; // Clé API fournie directement
+    this.apiUrl = process.env.NEXT_PUBLIC_OPENROUTER_API_URL || 'https://openrouter.ai/api/v1';
 
     if (!this.apiKey) {
-      console.warn('La clé API OpenRouter n\'est pas définie. Veuillez configurer OPENROUTER_API_KEY dans .env.local');
+      console.warn('La clé API OpenRouter n\'est pas définie');
     }
   }
 
