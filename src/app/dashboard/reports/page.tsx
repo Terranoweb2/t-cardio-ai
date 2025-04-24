@@ -166,7 +166,12 @@ export default function ReportsPage() {
 
   // Formatage des dates
   const formatDate = (date: Date | string) => {
-    return dayjs(date).format("DD/MM/YYYY HH:mm");
+    try {
+      return dayjs(date).format("DD/MM/YYYY HH:mm");
+    } catch (error) {
+      console.error("Erreur formatage date:", error);
+      return "Date invalide";
+    }
   };
 
   // Génération du rapport en PDF
@@ -245,11 +250,11 @@ export default function ReportsPage() {
         // Position Y actuelle pour les statistiques
         const yPos = aiReport ? (doc.getNumberOfPages() > 1 ? 30 : 95) : 95;
 
-        const avgClassification = classifyBloodPressure(stats.avgSys, stats.avgDia);
-        doc.text(`Tension moyenne: ${stats.avgSys}/${stats.avgDia} mmHg - ${avgClassification}`, 20, yPos);
-        doc.text(`Pouls moyen: ${stats.avgPulse} bpm`, 20, yPos + 5);
-        doc.text(`Variations systolique: ${stats.minSys} - ${stats.maxSys} mmHg`, 20, yPos + 10);
-        doc.text(`Variations diastolique: ${stats.minDia} - ${stats.maxDia} mmHg`, 20, yPos + 15);
+        const avgClassification = stats && stats.avgSys && stats.avgDia ? classifyBloodPressure(stats.avgSys, stats.avgDia) : 'Non disponible';
+        doc.text(`Tension moyenne: ${stats.avgSys || 'N/A'}/${stats.avgDia || 'N/A'} mmHg - ${avgClassification}`, 20, yPos);
+        doc.text(`Pouls moyen: ${stats.avgPulse || 'N/A'} bpm`, 20, yPos + 5);
+        doc.text(`Variations systolique: ${stats.minSys || 'N/A'} - ${stats.maxSys || 'N/A'} mmHg`, 20, yPos + 10);
+        doc.text(`Variations diastolique: ${stats.minDia || 'N/A'} - ${stats.maxDia || 'N/A'} mmHg`, 20, yPos + 15);
         doc.text(`Nombre de mesures: ${filteredMeasurements.length}`, 20, yPos + 20);
 
         // Tableau des mesures
@@ -301,17 +306,17 @@ export default function ReportsPage() {
             }
 
             // Classification de la mesure
-            const classification = classifyBloodPressure(m.systolic, m.diastolic);
+            const classification = m.systolic && m.diastolic ? classifyBloodPressure(m.systolic, m.diastolic) : 'Non disponible';
 
             // Ajouter les données
             doc.text(formatDate(m.date), 20, y);
-            doc.text(m.systolic.toString(), 70, y);
-            doc.text(m.diastolic.toString(), 85, y);
-            doc.text(m.pulse.toString(), 100, y);
+            doc.text(m.systolic ? m.systolic.toString() : 'N/A', 70, y);
+            doc.text(m.diastolic ? m.diastolic.toString() : 'N/A', 85, y);
+            doc.text(m.pulse ? m.pulse.toString() : 'N/A', 100, y);
             doc.text(classification, 115, y);
 
             // Tronquer les notes si elles sont trop longues
-            const notes = m.notes.length > 20 ? `${m.notes.substring(0, 20)}...` : m.notes;
+            const notes = m.notes && m.notes.length > 0 ? (m.notes.length > 20 ? `${m.notes.substring(0, 20)}...` : m.notes) : '';
             doc.text(notes, 170, y);
 
             y += 6;
