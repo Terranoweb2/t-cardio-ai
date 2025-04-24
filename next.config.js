@@ -4,6 +4,10 @@ const nextConfig = {
   // Toujours utiliser la configuration de production
   output: 'export',
   distDir: 'out',
+  // Désactiver l'optimisation d'images pour être compatible avec l'export statique
+  images: {
+    unoptimized: true,
+  },
   env: {
     // Exposer des variables d'environnement au client (attention à ne pas exposer de secrets sensibles)
     OPENROUTER_API_URL: process.env.OPENROUTER_API_URL,
