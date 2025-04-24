@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 import Script from "next/script";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { DatabaseProvider } from "@/contexts/DatabaseContext";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -36,9 +37,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          {children}
-          <Toaster />
+          <DatabaseProvider>
+            {children}
+          </DatabaseProvider>
         </AuthProvider>
+        <Toaster />
 
         {/* Script de gestion des notifications */}
         <Script

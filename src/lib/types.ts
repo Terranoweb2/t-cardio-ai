@@ -24,6 +24,14 @@ export interface PatientInfo {
   height?: number;
   medicalConditions?: string[];
   medications?: string[];
+  createdAt?: string;     // Date de création du profil
+  updatedAt?: string;     // Date de dernière mise à jour
+  role?: 'patient' | 'doctor' | 'admin'; // Rôle de l'utilisateur
+  doctor?: {
+    id: string;
+    name: string;
+    speciality?: string;
+  };                      // Informations du médecin (si applicable)
 }
 
 // Type pour un rapport médical
@@ -49,6 +57,23 @@ export interface SharingOptions {
   reportIds: string[];       // IDs des rapports partagés
   measurementIds: string[];  // IDs des mesures partagées
   readonly: boolean;         // Mode lecture seule
+}
+
+// Type pour un token de partage
+export interface ShareToken {
+  id: string;
+  userId: string;             // ID de l'utilisateur qui partage
+  recipientEmail?: string;    // Email du destinataire
+  recipientPhone?: string;    // Numéro de téléphone du destinataire (pour WhatsApp)
+  reportId?: string;          // ID du rapport partagé
+  measurementIds?: string[];  // IDs des mesures partagées
+  accessCode: string;         // Code d'accès pour sécuriser le partage
+  url?: string;               // URL de partage
+  createdAt: string;          // Date de création
+  expiresAt?: string;         // Date d'expiration
+  isActive: boolean;          // Indique si le token est actif
+  lastAccessedAt?: string;    // Dernière date d'accès
+  accessCount?: number;       // Nombre d'accès
 }
 
 // Type pour les statistiques

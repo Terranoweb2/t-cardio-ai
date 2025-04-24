@@ -1,11 +1,10 @@
 /**
  * Service de partage sécurisé des rapports médicaux
  */
-// Comment out nodemailer for client-side compatibility
-// import nodemailer from 'nodemailer';
 import CryptoJS from 'crypto-js';
 import qrcode from 'qrcode-generator';
 import type { MedicalReport } from '@/lib/types';
+import emailjs from '@emailjs/browser';
 
 interface EmailOptions {
   to: string;
@@ -28,20 +27,41 @@ interface SecureReportOptions {
 }
 
 class SharingService {
-  // private emailTransporter: nodemailer.Transporter | null = null;
-  private emailTransporter: any = null;
   private encryptionKey: string;
+  private emailJsServiceId: string = 'default_service';
+  private emailJsTemplateId: string = 'template_report';
+  private emailJsUserId: string = 'user_id'; // Vous devrez remplacer par votre ID utilisateur EmailJS
 
   constructor() {
     // Récupération des variables d'environnement
     this.encryptionKey = process.env.ENCRYPTION_KEY || 'default-encryption-key-change-in-production';
-    // this.initEmailTransporter();
+    
+    // Initialiser EmailJS si des variables d'environnement sont disponibles
+    if (process.env.EMAILJS_SERVICE_ID) {
+      this.emailJsServiceId = process.env.EMAILJS_SERVICE_ID;
+    }
+    if (process.env.EMAILJS_TEMPLATE_ID) {
+      this.emailJsTemplateId = process.env.EMAILJS_TEMPLATE_ID;
+    }
+    if (process.env.EMAILJS_USER_ID) {
+      this.emailJsUserId = process.env.EMAILJS_USER_ID;
+    }
+
+    // Initialiser EmailJS
+    this.initEmailService();
   }
 
-  private initEmailTransporter() {
-    // This method is for server-side use only
-    // For client-side static export, we'll just simulate email sending
-    console.log("Email transporter initialization skipped for client-side compatibility");
+  private initEmailService() {
+    // Initialiser EmailJS pour l'envoi client-side
+    if (typeof window !== 'undefined') {
+      // Pas besoin d'initialiser si nous n'avons pas d'ID utilisateur valide
+      if (this.emailJsUserId !== 'user_id') {
+        emailjs.init(this.emailJsUserId);
+        console.log("EmailJS initialized successfully");
+      } else {
+        console.warn("EmailJS not initialized: missing user ID");
+      }
+    }
   }
 
   /**
@@ -140,16 +160,46 @@ class SharingService {
     pdfAttachment?: Buffer
   ): Promise<{ success: boolean; message: string; accessCode?: string }> {
     try {
-      // Simulation du partage en environnement de développement ou client-side
-      console.log("[DEV] Envoi d'email à", recipientEmail, "avec le rapport:", report.title);
       const { url, accessCode: generatedAccessCode } = this.generateSecureReportLink({
         report,
         accessCode
       });
 
+      // Si EmailJS n'est pas configuré, simuler l'envoi
+      if (this.emailJsUserId === 'user_id' || typeof window === 'undefined') {
+        console.log("[DEV] Envoi d'email à", recipientEmail, "avec le rapport:", report.title);
+        
+        return {
+          success: true,
+          message: `Email simulé envoyé à ${recipientEmail}. Lien: ${url}`,
+          accessCode: generatedAccessCode
+        };
+      }
+
+      // Préparer les données pour le template EmailJS
+      const templateParams = {
+        to_email: recipientEmail,
+        from_name: senderName,
+        report_title: report.title,
+        report_url: url,
+        access_code: generatedAccessCode,
+        report_date: new Date(report.createdAt).toLocaleDateString(),
+        message: `${senderName} a partagé un rapport médical avec vous via T-Cardio AI.`,
+      };
+
+      // Envoyer l'email via EmailJS
+      const response = await emailjs.send(
+        this.emailJsServiceId,
+        this.emailJsTemplateId,
+        templateParams,
+        this.emailJsUserId
+      );
+
+      console.log('Email envoyé avec succès:', response);
+
       return {
         success: true,
-        message: `Email simulé envoyé à ${recipientEmail}. Lien: ${url}`,
+        message: `Email envoyé à ${recipientEmail} avec succès.`,
         accessCode: generatedAccessCode
       };
     } catch (error) {
