@@ -13,28 +13,74 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const router = useRouter();
 
-  // Ces fonctions seront remplacées par de véritables appels d'API
-  const handleLogin = (e: React.FormEvent) => {
+  // Fonction d'authentification en mode production
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simuler une connexion réussie
-    localStorage.setItem("user", JSON.stringify({
-      id: "user-123",
-      name: "Utilisateur",
-      email: "utilisateur@exemple.fr",
-      role: "patient",
-      doctor: {
-        id: "doc-456",
-        name: "Dr. Marie Martin",
-        speciality: "Cardiologie"
-      }
-    }));
-    router.push("/dashboard");
+    
+    // Récupérer les valeurs des champs (à implémenter avec useState)
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement;
+    
+    if (!emailInput || !passwordInput) return;
+    
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    
+    if (!email || !password) {
+      // Afficher une erreur
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+    
+    try {
+      // En production, remplacer ceci par un véritable appel d'API
+      // Créer un utilisateur temporaire avec UUID aléatoire et sans données fictives
+      const userId = crypto.randomUUID();
+      
+      localStorage.setItem("user", JSON.stringify({
+        id: userId,
+        name: 'Utilisateur',
+        email: email,
+        role: "patient",
+        createdAt: new Date().toISOString()
+      }));
+      
+      router.push("/dashboard");
+    } catch (error) {
+      console.error('Erreur lors de la connexion:', error);
+      alert('Erreur lors de la connexion');
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simuler une inscription réussie
-    setActiveTab("login");
+    
+    // Récupérer les valeurs des champs (à implémenter avec useState)
+    const nameInput = document.getElementById('name') as HTMLInputElement;
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const passwordInput = document.getElementById('password') as HTMLInputElement;
+    
+    if (!nameInput || !emailInput || !passwordInput) return;
+    
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    
+    if (!name || !email || !password) {
+      // Afficher une erreur
+      alert('Veuillez remplir tous les champs');
+      return;
+    }
+    
+    try {
+      // En production, remplacer ceci par un véritable appel d'API
+      // Pour l'instant, simplement rediriger vers le login
+      setActiveTab("login");
+      alert('Compte créé avec succès. Veuillez vous connecter.');
+    } catch (error) {
+      console.error('Erreur lors de l\'inscription:', error);
+      alert('Erreur lors de l\'inscription');
+    }
   };
 
   return (

@@ -1,11 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Configuration conditionnelle pour l'export statique uniquement en production
-  ...(process.env.NODE_ENV === 'production' ? {
-    output: 'export',
-    distDir: 'out',
-  } : {}),
+  // Toujours utiliser la configuration de production
+  output: 'export',
+  distDir: 'out',
   env: {
     // Exposer des variables d'environnement au client (attention à ne pas exposer de secrets sensibles)
     OPENROUTER_API_URL: process.env.OPENROUTER_API_URL,
