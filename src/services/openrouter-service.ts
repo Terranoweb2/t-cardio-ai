@@ -61,7 +61,7 @@ export class OpenRouterService {
 
   constructor() {
     // Récupération des variables d'environnement
-    this.apiKey = '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'; // Clé API fournie directement
+    this.apiKey = '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'; // Clé API fournie directement
     this.apiUrl = process.env.NEXT_PUBLIC_OPENROUTER_API_URL || 'https://openrouter.ai/api/v1';
 
     if (!this.apiKey) {

@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle, Trash2, Database, AlertTriangle } from "lucid
 import { useToast } from "@/hooks/use-toast";
 import { clearLocalStorageData } from "@/utils/clear-data";
 import Link from "next/link";
+import { db } from "@/lib/database";
 
 export default function AdminPage() {
   const { toast } = useToast();
@@ -78,26 +79,28 @@ export default function AdminPage() {
       setIsLoading(true);
       addStatusMessage("Début du nettoyage de toutes les données...", "info");
       
-      // Nettoyer le client d'abord
-      clearLocalStorageData();
-      addStatusMessage("✅ Données client effacées", "success");
+      // Utiliser la méthode clearAllData de la base de données
+      await db.clearAllData();
+      addStatusMessage("✅ Toutes les données ont été effacées (IndexedDB et localStorage)", "success");
       
-      // Puis nettoyer le serveur
-      const response = await fetch('/api/admin/clear-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ confirm: true }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Une erreur est survenue');
+      // Essayer aussi de nettoyer le serveur si l'API existe
+      try {
+        const response = await fetch('/api/admin/clear-data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ confirm: true }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          addStatusMessage("✅ Données serveur effacées", "success");
+        }
+      } catch (serverError) {
+        console.log('API serveur non disponible pour le nettoyage, uniquement données client nettoyées');
       }
-      
-      addStatusMessage("✅ Données serveur effacées", "success");
       toast({
         title: "Toutes les données effacées",
         description: "Les données client et serveur ont été supprimées avec succès",

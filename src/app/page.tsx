@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
+import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
@@ -27,8 +27,8 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-blue-50 p-4">
       <div className="max-w-3xl w-full text-center">
         <div className="flex items-center justify-center mb-8">
-          <Heart className="h-12 w-12 text-blue-600" />
-          <h1 className="text-5xl font-bold text-blue-700 ml-4">T-Cardio AI</h1>
+          <Image src="/logo.png" alt="T-Cardio AI Logo" width={50} height={50} className="mr-4" />
+          <h1 className="text-5xl font-bold text-blue-700">T-Cardio AI</h1>
         </div>
 
         <h2 className="text-2xl font-medium text-gray-700 mb-6">

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
@@ -40,7 +41,10 @@ export default function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-blue-50">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-blue-700">T-Cardio AI</CardTitle>
+          <div className="flex items-center justify-center mb-4">
+            <Image src="/logo.png" alt="T-Cardio AI Logo" width={40} height={40} className="mr-3" />
+            <CardTitle className="text-2xl font-bold text-blue-700">T-Cardio AI</CardTitle>
+          </div>
           <CardDescription>
             Votre assistant de suivi cardiaque intelligent
           </CardDescription>

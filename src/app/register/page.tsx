@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function RegisterPage() {
   const [displayName, setDisplayName] = useState('');
@@ -67,8 +67,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
         <div className="text-center">
           <div className="flex justify-center items-center mb-4">
-            <Heart className="h-10 w-10 text-blue-600" />
-            <h1 className="text-3xl font-bold text-blue-700 ml-2">T-Cardio AI</h1>
+            <Image src="/logo.png" alt="T-Cardio AI Logo" width={40} height={40} className="mr-3" />
+            <h1 className="text-3xl font-bold text-blue-700">T-Cardio AI</h1>
           </div>
           <h2 className="text-2xl font-semibold text-gray-700">Inscription</h2>
           <p className="mt-2 text-gray-500">

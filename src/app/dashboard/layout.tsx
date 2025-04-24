@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/ui/logout-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,7 +75,12 @@ const sidebarItems = [
     title: "Partage",
     href: "/dashboard/share",
     icon: Share2,
-  }
+  },
+  {
+    title: "Déconnexion",
+    href: "/auth",
+    icon: LogOut,
+  },
 ];
 
 export default function DashboardLayout({
@@ -95,10 +102,7 @@ export default function DashboardLayout({
     setUser(JSON.parse(storedUser) as UserProfile);
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    router.push("/auth");
-  };
+  // La fonction handleLogout a été déplacée dans le composant LogoutButton
 
   if (!user) {
     return (
@@ -115,12 +119,16 @@ export default function DashboardLayout({
             <div className="flex items-center justify-center h-20 border-b border-border bg-card">
               {/* Logo area with animation */}
               <Link href="/dashboard" className="flex items-center">
-                <img
-                  src="/logo.png"
-                  alt="T-Cardio AI Logo"
-                  className="h-12 w-12 object-contain mr-3 logo-heartbeat"
-                  loading="lazy"
-                />
+                <div className="mr-3 logo-heartbeat">
+                  <Image
+                    src="/logo.png"
+                    alt="T-Cardio AI Logo"
+                    width={48}
+                    height={48}
+                    className="object-contain"
+                    priority
+                  />
+                </div>
                 <span className="text-2xl font-bold text-primary logo-animation">
                   T-Cardio AI
                 </span>
@@ -166,6 +174,7 @@ export default function DashboardLayout({
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
               </div>
+              <LogoutButton className="w-full mt-4" />
             </div>
           </div>
         </div>
@@ -174,12 +183,16 @@ export default function DashboardLayout({
         <div className="flex flex-col w-full">
           <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b border-border bg-card md:hidden">
             <Link href="/dashboard" className="flex items-center">
-              <img
-                src="/logo.png"
-                alt="T-Cardio AI Logo"
-                className="h-9 w-9 object-contain mr-2 logo-heartbeat"
-                loading="lazy"
-              />
+              <div className="mr-2 logo-heartbeat">
+                <Image
+                  src="/logo.png"
+                  alt="T-Cardio AI Logo"
+                  width={36}
+                  height={36}
+                  className="object-contain"
+                  priority
+                />
+              </div>
               <span className="text-xl font-bold text-primary logo-animation">
                 T-Cardio AI
               </span>
@@ -266,12 +279,10 @@ export default function DashboardLayout({
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={handleLogout}
-                    className="text-destructive cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Déconnexion
+                  <DropdownMenuItem asChild className="text-destructive">
+                    <div className="cursor-pointer">
+                      <LogoutButton className="w-full justify-start px-0 border-0 shadow-none hover:bg-transparent" />
+                    </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

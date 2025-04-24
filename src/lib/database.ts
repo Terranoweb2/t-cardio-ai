@@ -274,6 +274,33 @@ export class TCardioDatabase extends Dexie {
       shareTokens
     };
   }
+
+  /**
+   * Vider toutes les données de démonstration
+   * Cette méthode supprime toutes les données de la base de données et du localStorage
+   */
+  async clearAllData(): Promise<void> {
+    try {
+      console.log('Suppression de toutes les données...');
+      
+      // Vider les tables IndexedDB
+      await this.measurements.clear();
+      await this.reports.clear();
+      await this.shareTokens.clear();
+      await this.users.clear();
+      
+      // Supprimer les données du localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('measurements');
+      localStorage.removeItem('reports');
+      localStorage.removeItem('shareTokens');
+      
+      console.log('Toutes les données ont été supprimées avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la suppression des données:', error);
+      throw error;
+    }
+  }
 }
 
 // Instance unique de la base de données
