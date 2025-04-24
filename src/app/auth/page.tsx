@@ -18,8 +18,8 @@ export default function AuthPage() {
     // Simuler une connexion réussie
     localStorage.setItem("user", JSON.stringify({
       id: "user-123",
-      name: "Jean Dupont",
-      email: "jean@example.com",
+      name: "Utilisateur",
+      email: "utilisateur@exemple.fr",
       role: "patient",
       doctor: {
         id: "doc-456",

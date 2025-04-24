@@ -291,71 +291,11 @@ export default function Dashboard() {
     }
   };
 
-  // Générer des données de test
-  const generateTestData = () => {
-    const now = new Date();
-    const testMeasurements: Measurement[] = [];
-
-    // Générer des mesures pour les 30 derniers jours
-    for (let i = 0; i < 30; i++) {
-      const date = new Date();
-      date.setDate(now.getDate() - i);
-
-      // Simuler une tendance à l'amélioration (valeurs qui diminuent légèrement)
-      const day = i;
-
-      // Base values
-      const baseSystolic = 145 - Math.floor(day / 10) * 5;
-      const baseDiastolic = 95 - Math.floor(day / 10) * 3;
-      const basePulse = 78 - Math.floor(day / 15) * 2;
-
-      // Ajouter une variation aléatoire
-      const systolic = baseSystolic + Math.floor(Math.random() * 10) - 5;
-      const diastolic = baseDiastolic + Math.floor(Math.random() * 8) - 4;
-      const pulse = basePulse + Math.floor(Math.random() * 6) - 3;
-
-      // Générer des notes
-      let notes = "";
-      if (i === 0) {
-        notes = "Mesure prise après activité physique légère";
-      } else if (i === 7) {
-        notes = "Début traitement médicamenteux";
-      } else if (i === 15) {
-        notes = "Mesure prise en position assise après repos";
-      } else if (i === 25) {
-        notes = "Mesure prise le matin à jeun";
-      }
-
-      testMeasurements.push({
-        id: uuidv4(),
-        date: date.toISOString(),
-        systolic,
-        diastolic,
-        pulse,
-        notes,
-        userId: user?.id || "unknown"
-      });
-    }
-
-    setMeasurements(testMeasurements);
-
-    toast({
-      title: "Données de test générées",
-      description: "30 mesures de test ont été créées pour les 30 derniers jours.",
-    });
-  };
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Tableau de bord</h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={generateTestData}
-        >
-          Générer des données de test
-        </Button>
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
