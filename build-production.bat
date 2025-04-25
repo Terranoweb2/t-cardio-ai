@@ -30,12 +30,6 @@ if %errorlevel% neq 0 (
   echo Erreur lors de la construction de l'application.
   exit /b %errorlevel%
 )
-
-call npm run export
-if %errorlevel% neq 0 (
-  echo Erreur lors de l'exportation statique.
-  exit /b %errorlevel%
-)
 echo Construction et exportation terminées avec succès.
 echo Application exportée dans le dossier 'out'.
 echo.

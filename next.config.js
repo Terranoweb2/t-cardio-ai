@@ -18,10 +18,6 @@ const nextConfig = {
   },
   // Optimisation du build
   poweredByHeader: false,
-  // Désactiver le badge Next.js (logo N en haut à droite)
-  devIndicators: {
-    buildActivity: false,
-  },
 
   // TypeScript configuration to ignore type checking during build
   typescript: {
