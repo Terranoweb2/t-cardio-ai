@@ -24,16 +24,19 @@ set NODE_ENV=production
 echo Variables d'environnement configurées pour la production.
 echo.
 
-echo 4. Construction de l'application...
+echo 4. Construction et exportation de l'application...
 call npm run build
 if %errorlevel% neq 0 (
   echo Erreur lors de la construction de l'application.
   exit /b %errorlevel%
 )
-echo Construction terminée avec succès.
-echo.
 
-echo 5. Exportation statique (générée dans le dossier 'out')...
+call npm run export
+if %errorlevel% neq 0 (
+  echo Erreur lors de l'exportation statique.
+  exit /b %errorlevel%
+)
+echo Construction et exportation terminées avec succès.
 echo Application exportée dans le dossier 'out'.
 echo.
 
